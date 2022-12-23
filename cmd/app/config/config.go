@@ -7,14 +7,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config is global object that holds all application level variables.
 var Config appConfig
 
 type appConfig struct {
-	ServerPort          int `mapstructure:"server_port"`
+	// the server port. Defaults to 8080
+	ServerPort int `mapstructure:"server_port"`
+	// GitHub API client
 	GitHubClient        *github.Client
 	GitHubWebhookSecret string `mapstructure:"github_webhook_secret"`
 }
 
+// LoadConfig loads config from files
 func LoadConfig(configPaths ...string) error {
 	v := viper.New()
 	v.SetConfigName("server")

@@ -1,5 +1,3 @@
-//https://github.com/MartinHeinz/go-github-app/tree/master/cmd/app/webhooks
-
 package webhooks
 
 import (
@@ -7,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/patrickblackjr/prow-lite/cmd/app/test_data"
 	"github.com/stretchr/testify/assert"
 )
 
