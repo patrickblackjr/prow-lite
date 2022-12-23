@@ -1,1 +1,4 @@
-# github_webhook_secret: "WEBHOOK_SECRET"
+github_webhook_secret: "password"
+# installation_id: 393702547
+# app_id: 269804
+# webhook_secret: password

@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/patrickblackjr/prow-lite/cmd/config"
+	"github.com/patrickblackjr/prow-lite/cmd/app/config"
 )
 
 type Event string

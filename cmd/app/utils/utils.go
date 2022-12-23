@@ -6,12 +6,12 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/google/go-github/v45/github"
-	"github.com/patrickblackjr/prow-lite/cmd/config"
+	"github.com/patrickblackjr/prow-lite/cmd/app/config"
 )
 
-func InitGithubClient() {
+func InitGitHubClient() {
 	tr := http.DefaultTransport
-	itr, err := ghinstallation.NewKeyFromFile(tr, 269804, 32477892, "/config/github-app.pem")
+	itr, err := ghinstallation.NewKeyFromFile(tr, 269804, 2698046789, "../config/github-app.pem")
 
 	if err != nil {
 		log.Fatal(err)
