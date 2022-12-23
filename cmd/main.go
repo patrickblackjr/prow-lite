@@ -36,6 +36,7 @@ func main() {
 		v1.POST("/github/payload", webhooks.ConsumeEvent)
 		v1.GET("/github/pullrequests/:owner/:repo", api.GetPullRequests)
 		v1.GET("/github/pullrequests/:owner/:repo/:page", api.GetPullRequestsPaginated)
+		v1.GET("/github/issues")
 	}
 
 	utils.InitGitHubClient()

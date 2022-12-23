@@ -10,6 +10,21 @@ import (
 	"github.com/patrickblackjr/prow-lite/cmd/app/config"
 )
 
+func GetIssues(c *gin.Context) {
+	if issues, resp, err := config.Config.GitHubClient.Issues.List(c, false, &github.IssueListOptions{}); err != nil {
+		log.Println(err)
+		c.AbortWithStatus(resp.StatusCode)
+	} else {
+		var issueTitles []string
+		for _, iss := range issues {
+			issueTitles = append(issueTitles, *iss.Title, *iss.Body)
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"issues": issueTitles,
+		})
+	}
+}
+
 // Manual Test: curl http://localhost:8080/api/v1/github/pullrequests/MartinHeinz/python-project-blueprint
 // Result `{"pull_requests":["Some Instructions","Add newline to match dev.Dockerfile"]}`
 func GetPullRequests(c *gin.Context) {
