@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/google/go-github/v45 v45.2.0
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
