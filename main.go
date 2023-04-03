@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/google/go-github/v50/github"
@@ -47,9 +46,9 @@ func main() {
 		if err != nil {
 			githubactions.Warningf("%v", err)
 		} else if len(comments) > 0 {
-			log.Println(*comments[0].Body)
+			githubactions.Infof(*comments[0].Body)
 		} else {
-			log.Println("no comment for this issue")
+			githubactions.Infof("no comment for this issue")
 		}
 	}
 
