@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/sethvargo/go-githubactions"
@@ -28,11 +29,9 @@ func main() {
 	client := github.NewClient(tc)
 
 	owner := os.Getenv("GITHUB_REPOSITORY_OWNER")
-	repoName := os.Getenv("GITHUB_ACTION_REPOSITORY")
 
-	if repoName == "" {
-		repoName = "prow-lite"
-	}
+	parts := strings.Split(os.Getenv("GITHUB_REPOSITORY"), "/")
+	repoName := parts[0]
 
 	IssueListByRepoOptions := github.IssueListByRepoOptions{}
 	issues, _, err := client.Issues.ListByRepo(ctx, owner, repoName, &IssueListByRepoOptions)
