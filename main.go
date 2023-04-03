@@ -44,11 +44,11 @@ func main() {
 		opt := &github.IssueListCommentsOptions{}
 		comments, _, err := client.Issues.ListComments(ctx, owner, repoName, *issues[i].Number, opt)
 		if err != nil {
-			githubactions.Warningf("%v", err)
+			fmt.Printf("%v", err)
 		} else if len(comments) > 0 {
-			githubactions.Infof(*comments[0].Body)
+			fmt.Println(*comments[0].Body)
 		} else {
-			githubactions.Infof("no comment for this issue")
+			fmt.Println("no comment for this issue")
 		}
 	}
 
