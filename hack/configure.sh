@@ -18,10 +18,10 @@ NC='\033[0m' # No Color
 
 echo -e "\n${BLUE}Renaming variables and files...${NC}\n"
 
-sed -i s~12345~$APP_ID~g cmd/app/utils/utils.go
-sed -i s~123456789~$INSTALLATION_ID~g cmd/app/utils/utils.go
-sed -i s~WEBHOOK_SECRET~$WEBHOOK_SECRET~g config/server.yaml
-sed -i s~$DUMMY_REGISTRY~$REGISTRY~g Makefile
+sed -i'.bak' s~12345~$APP_ID~g cmd/app/utils/utils.go
+sed -i'.bak' s~123456789~$INSTALLATION_ID~g cmd/app/utils/utils.go
+sed -i'.bak' s~WEBHOOK_SECRET~$WEBHOOK_SECRET~g config/server.yaml
+sed -i'.bak' s~$DUMMY_REGISTRY~$REGISTRY~g Makefile
 
 cat $KEY_PATH > config/prow-lite-qa.2023-04-01.private-key.pem
 
