@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v53 v53.0.0
 	github.com/migueleliasweb/go-github-mock v0.0.19
 	github.com/spf13/viper v1.16.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 )
