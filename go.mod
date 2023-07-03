@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/gin-gonic/gin v1.9.1
-	github.com/google/go-github/v53 v53.0.0
+	github.com/google/go-github/v53 v53.2.0
 	github.com/migueleliasweb/go-github-mock v0.0.19
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.3
