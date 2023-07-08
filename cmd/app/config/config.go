@@ -1,9 +1,8 @@
 package config
 
 import (
-	"fmt"
-
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v50/github"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -11,9 +10,10 @@ import (
 var Config appConfig
 
 type appConfig struct {
-	ServerPort          int `mapstructure:"server_port"`
-	GitHubClient        *github.Client
-	GitHubWebhookSecret string `mapstructure:"github_webhook_secret"`
+	ServerPort           int `mapstructure:"server_port"`
+	GitHubClient         *github.Client
+	GitHubWebhookSecret  string `mapstructure:"github_webhook_secret"`
+	GitHubInstallationID int64  `mapstructure:"installation_id"`
 }
 
 // LoadConfig loads config from files
@@ -30,7 +30,8 @@ func LoadConfig(configPaths ...string) error {
 		v.AddConfigPath(path)
 	}
 	if err := v.ReadInConfig(); err != nil {
-		return fmt.Errorf("failed to read configuration file: %s", err)
+		log.Errorf("failed to read configuration file: %s", err)
+		return nil
 	}
 	return v.Unmarshal(&Config)
 }

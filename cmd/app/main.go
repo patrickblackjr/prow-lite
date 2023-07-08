@@ -1,44 +1,46 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/patrickblackjr/prow-lite/cmd/app/api"
 	"github.com/patrickblackjr/prow-lite/cmd/app/config"
+	"github.com/patrickblackjr/prow-lite/cmd/app/plugins"
 	"github.com/patrickblackjr/prow-lite/cmd/app/utils"
-	"github.com/patrickblackjr/prow-lite/cmd/app/webhooks"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/cbrgm/githubevents/githubevents"
 )
 
 func main() {
+
+	log.SetLevel(log.DebugLevel)
+
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+
 	// load application configurations
 	if err := config.LoadConfig("./config"); err != nil {
-		panic(fmt.Errorf("invalid application configuration: %s", err))
+		log.Panicf("invalid application configuration: %s", err)
 	}
 
-	// Creates a router without any middleware by default
-	r := gin.New()
+	handle := githubevents.New(config.Config.GitHubWebhookSecret)
 
-	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
-	// By default gin.DefaultWriter = os.Stdout
-	r.Use(gin.Logger())
+	handle.OnIssueCommentCreated(
+		plugins.NewResponder("this is a test"),
+	)
 
-	// Recovery middleware recovers from any panics and writes a 500 if there was one.
-	r.Use(gin.Recovery())
+	http.HandleFunc("/github/webhook", func(w http.ResponseWriter, r *http.Request) {
+		utils.InitGitHubClient(config.Config.GitHubInstallationID)
+		err := handle.HandleEventRequest(r)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	})
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	v1 := r.Group("/api/v1")
-	{
-		v1.POST("/github/payload", webhooks.ConsumeEvent)
-		v1.GET("/github/pullrequests/:owner/:repo", api.GetPullRequests)
-		// v1.GET("/github/pullrequests/:owner/:repo/:page", api.GetPullRequestsPaginated)
+	err := http.ListenAndServe("127.0.0.1:8080", nil)
+	if err != nil {
+		log.Panic(err)
 	}
-
-	utils.InitGitHubClient()
-
-	r.Run(fmt.Sprintf(":%v", config.Config.ServerPort))
 }
