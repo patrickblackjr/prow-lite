@@ -3,7 +3,8 @@ module github.com/patrickblackjr/prow-lite
 go 1.20
 
 require (
-	github.com/bradleyfalzon/ghinstallation/v2 v2.0.0
+	github.com/bradleyfalzon/ghinstallation v1.1.1
+	github.com/bradleyfalzon/ghinstallation/v2 v2.5.0
 	github.com/cbrgm/githubevents v1.8.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/sirupsen/logrus v1.9.3
@@ -12,7 +13,7 @@ require (
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
-	github.com/cloudflare/circl v1.1.0 // indirect
+	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
