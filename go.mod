@@ -3,7 +3,7 @@ module github.com/patrickblackjr/prow-lite
 go 1.20
 
 require (
-	github.com/bradleyfalzon/ghinstallation v1.1.1
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.0
 	github.com/cbrgm/githubevents v1.8.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/sirupsen/logrus v1.9.3
