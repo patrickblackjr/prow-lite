@@ -1,4 +1,4 @@
-FROM golang:1.20.5-bullseye
+FROM golang:1.20.6-bullseye
 WORKDIR /usr/src/app
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
