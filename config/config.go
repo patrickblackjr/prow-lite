@@ -1,7 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/sirupsen/logrus"
@@ -22,13 +22,13 @@ type HTTPConfig struct {
 	Port    int    `yaml:"port"`
 }
 
+// nolint:unused
 type AppConfiguration struct{}
 
 // ReadConfig unmarshals a YAML config file
 func ReadConfig(path string) (*Config, error) {
-	var c Config
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		logrus.Errorf("failed to read configuration file: %s", err.Error())
 		return nil, err
