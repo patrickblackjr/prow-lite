@@ -4,21 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v53/github"
 	"github.com/palantir/go-githubapp/githubapp"
+	"github.com/patrickblackjr/prow-lite/pkg/plugins/assign"
 	"github.com/sirupsen/logrus"
 )
 
+// IssueCommentHandler ...
 type IssueCommentHandler struct {
 	githubapp.ClientCreator
 }
 
+// Handles tells go-githubapp what types of events this handles
 func (h *IssueCommentHandler) Handles() []string {
 	return []string{"issue_comment"}
 }
 
+// Handle handles
 func (h *IssueCommentHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
 	var event github.IssueCommentEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
@@ -26,8 +31,8 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType, deliveryID 
 		return err
 	}
 
-	if event.GetIssue().IsPullRequest() {
-		logrus.Debug("issue comment is on a pull request")
+	if event.GetIssue().IsPullRequest() == false {
+		logrus.Debug("issue comment is issue")
 	}
 
 	repo := event.GetRepo()
@@ -52,6 +57,17 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType, deliveryID 
 	if strings.HasSuffix(author, "[bot]") {
 		logrus.Debug("issue comment was created by a bot and therefore ignored")
 		return nil
+	}
+
+	assignMatch, err := regexp.MatchString(assign.AssignRegexp, body)
+	ccMatch, err := regexp.MatchString(assign.CCRegexp, body)
+	if err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	logrus.Info(assignMatch, ccMatch)
+	if assignMatch || ccMatch {
+		assign.Users(client, &event)
 	}
 
 	logrus.Debugf("echoing comment on %s/%s#%d by %s", repoOwner, repoName, *issueNumber, author)

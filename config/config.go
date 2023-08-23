@@ -17,11 +17,14 @@ type Config struct {
 	AppConfig AppConfiguration `yaml:"app_config"`
 }
 
+// HTTPConfig manages the configuration for the
+// server address and port.
 type HTTPConfig struct {
 	Address string `yaml:"address"`
 	Port    int    `yaml:"port"`
 }
 
+// AppConfiguration manages app-specific configuration
 // nolint:unused
 type AppConfiguration struct{}
 
