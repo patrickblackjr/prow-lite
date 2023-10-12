@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-github/v53 v53.2.0
+	github.com/google/go-github/v56 v56.0.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/palantir/go-githubapp v0.18.0
 	github.com/sirupsen/logrus v1.9.3
