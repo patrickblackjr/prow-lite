@@ -33,8 +33,15 @@ func main() {
 		logrus.Panic(err)
 	}
 
+	// Create instances of your plugins
+	assigner := &handlers.Assigner{
+		ClientCreator: cc,
+	}
+
+	// Pass the plugins to the IssueCommentHandler
 	issueCommentHandler := &handlers.IssueCommentHandler{
 		ClientCreator: cc,
+		Plugins:       []handlers.Plugin{assigner},
 	}
 
 	webhookHandler := githubapp.NewDefaultEventDispatcher(c.GitHub, issueCommentHandler)
