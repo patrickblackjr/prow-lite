@@ -2,7 +2,7 @@ module github.com/patrickblackjr/prow-lite
 
 go 1.21
 
-toolchain go1.21.5
+toolchain go1.23.4
 
 require (
 	github.com/google/go-github/v56 v56.0.0
