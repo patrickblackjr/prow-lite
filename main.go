@@ -1,57 +1,44 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
-	"time"
+	"os"
 
-	"github.com/gregjones/httpcache"
-	"github.com/palantir/go-githubapp/githubapp"
-	"github.com/patrickblackjr/prow-lite/config"
-	"github.com/patrickblackjr/prow-lite/pkg/handlers"
-	"github.com/patrickblackjr/prow-lite/pkg/log"
-	"github.com/sirupsen/logrus"
+	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v68/github"
+	"github.com/patrickblackjr/prow-lite/plugins"
+	"github.com/rs/zerolog/log"
+	sloggin "github.com/samber/slog-gin"
 )
 
+func initGithubApp() *github.Client {
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 269804, 32477892, "prow-lite-qa.2025-01-13.private-key.pem")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create github app client")
+	}
+	client := github.NewClient(&http.Client{Transport: itr})
+	return client
+}
+
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	log.InitLogging()
+	r := gin.New()
+	r.SetTrustedProxies(nil)
+	r.Use(sloggin.New(logger))
+	r.Use(gin.Recovery())
 
-	// load application configurations
-	c, err := config.ReadConfig("./config/server.yaml")
-	if err != nil {
-		logrus.Panicf("invalid application configuration: %s", err)
-	}
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "ok",
+		})
+	})
 
-	cc, err := githubapp.NewDefaultCachingClientCreator(
-		c.GitHub,
-		githubapp.WithClientUserAgent("prow-lite/0.0.1"),
-		githubapp.WithClientTimeout(3*time.Second),
-		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
-	)
-	if err != nil {
-		logrus.Panic(err)
-	}
+	client := initGithubApp()
+	registerEventHandlers(r, client, logger, plugins.ProcessComment)
 
-	// Create instances of your plugins
-	assigner := &handlers.Assigner{
-		ClientCreator: cc,
-	}
-
-	// Pass the plugins to the IssueCommentHandler
-	issueCommentHandler := &handlers.IssueCommentHandler{
-		ClientCreator: cc,
-		Plugins:       []handlers.Plugin{assigner},
-	}
-
-	webhookHandler := githubapp.NewDefaultEventDispatcher(c.GitHub, issueCommentHandler)
-
-	http.Handle(githubapp.DefaultWebhookRoute, webhookHandler)
-
-	addr := fmt.Sprintf("%s:%d", c.Server.Address, c.Server.Port)
-	logrus.Infof("Starting server on %s", addr)
-	err = http.ListenAndServe(addr, nil)
-	if err != nil {
-		logrus.Panic(err)
-	}
+	logger.Info("server is running", slog.String("port", "8080"))
+	r.Run(":8080")
 }
