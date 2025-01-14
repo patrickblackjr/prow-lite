@@ -6,6 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/google/go-github/v56 v56.0.0
+	github.com/google/go-github/v68 v68.0.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/palantir/go-githubapp v0.32.0
 	github.com/sirupsen/logrus v1.9.3
@@ -15,7 +16,6 @@ require (
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.13.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
-	github.com/google/go-github/v68 v68.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
