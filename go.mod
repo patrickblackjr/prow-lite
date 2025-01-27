@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v68 v68.0.0
 	github.com/palantir/go-githubapp v0.32.0
 	github.com/rs/zerolog v1.33.0
-	github.com/samber/slog-gin v1.14.0
+	github.com/samber/slog-gin v1.14.1
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/yaml.v3 v3.0.1
 )
