@@ -6,6 +6,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v68 v68.0.0
+	github.com/google/go-github/v69 v69.1.0
 	github.com/palantir/go-githubapp v0.32.0
 	github.com/rs/zerolog v1.33.0
 	github.com/samber/slog-gin v1.14.0
