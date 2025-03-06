@@ -8,13 +8,15 @@ import (
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v68/github"
-	"github.com/patrickblackjr/prow-lite/plugins"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/rs/zerolog/log"
 	sloggin "github.com/samber/slog-gin"
 )
 
+var logLevel = new(slog.LevelVar)
+
 func initGithubApp() *github.Client {
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 269804, 32477892, "prow-lite-qa.2025-01-13.private-key.pem")
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 269804, 32477892, "prow-dev.pem")
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create github app client")
 	}
@@ -23,7 +25,8 @@ func initGithubApp() *github.Client {
 }
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logLevel.Set(slog.LevelDebug)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
 
 	r := gin.New()
 	r.SetTrustedProxies(nil)
@@ -37,7 +40,8 @@ func main() {
 	})
 
 	client := initGithubApp()
-	registerEventHandlers(r, client, logger, plugins.ProcessComment)
+	githubapi.RegisterEventHandlers(r, client, logger, githubapi.ProcessComment)
+	githubapi.EnsureLabels("patrickblackjr", []string{"lgtm"}, client, logger)
 
 	logger.Info("server is running", slog.String("port", "8080"))
 	r.Run(":8080")

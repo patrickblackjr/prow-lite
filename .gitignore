@@ -18,3 +18,4 @@ config/**/*.yaml
 **/tmp
 
 dist/
+.DS_Store

@@ -1,4 +1,4 @@
-package main
+package githubapi
 
 import (
 	"context"
@@ -10,9 +10,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v68/github"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi/checkrun"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
 
-func registerEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
+func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
 	eventHandlers := map[string]func([]byte, *github.Client, *slog.Logger){
 		"issue_comment": func(request []byte, client *github.Client, logger *slog.Logger) {
 			handleIssueCommentEvent(request, client, logger, processComment)
@@ -63,7 +65,7 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 	// Handle the pull request event
 	logger.Info("handling pull request event", slog.String("action", *event.Action))
 
-	if *event.Action == "opened" {
+	if *event.Action == "opened" || *event.Action == "reopened" {
 		ctx := context.Background()
 		owner := event.GetRepo().GetOwner().GetLogin()
 		repo := event.GetRepo().GetName()
@@ -91,5 +93,12 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 			return
 		}
 		logger.Info("added do-not-merge label")
+
+		if *event.Action == "reopened" {
+			pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
+			pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
+		}
+
+		checkrun.CreateCheckRun(owner, repo, pullrequest.GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
 	}
 }
