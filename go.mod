@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v68 v68.0.0
 	github.com/rs/zerolog v1.33.0
-	github.com/samber/slog-gin v1.14.0
+	github.com/samber/slog-gin v1.14.1
 )
 
 require (
