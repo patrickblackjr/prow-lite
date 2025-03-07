@@ -3,7 +3,7 @@ module github.com/patrickblackjr/prow-lite
 go 1.23.4
 
 require (
-	github.com/bradleyfalzon/ghinstallation v1.1.1
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v68 v68.0.0
 	github.com/rs/zerolog v1.33.0
