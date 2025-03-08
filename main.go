@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/rs/zerolog/log"
 	sloggin "github.com/samber/slog-gin"
