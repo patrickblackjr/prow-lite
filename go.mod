@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.14.0
 	github.com/gin-gonic/gin v1.10.0
-	github.com/google/go-github/v69 v69.0.0
+	github.com/google/go-github/v69 v69.2.0
 	github.com/rs/zerolog v1.33.0
 	github.com/samber/slog-gin v1.14.1
 	github.com/stretchr/testify v1.10.0
