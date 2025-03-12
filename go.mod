@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v69 v69.2.0
 	github.com/lmittmann/tint v1.0.7
 	github.com/migueleliasweb/go-github-mock v1.1.0
-	github.com/samber/slog-gin v1.14.1
+	github.com/samber/slog-gin v1.15.0
 	github.com/stretchr/testify v1.10.0
 )
 
