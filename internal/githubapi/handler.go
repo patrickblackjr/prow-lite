@@ -10,8 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v69/github"
-	"github.com/patrickblackjr/prow-lite/internal/githubapi/checkrun"
-	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
 
 func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
@@ -95,10 +93,10 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 		logger.Info("added do-not-merge label")
 
 		if *event.Action == "reopened" {
-			pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
-			pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
+			RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
+			AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
 		}
 
-		checkrun.CreateCheckRun(owner, repo, pullrequest.GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
+		CreateCheckRun(owner, repo, GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
 	}
 }

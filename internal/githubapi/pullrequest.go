@@ -1,4 +1,4 @@
-package pullrequest
+package githubapi
 
 import (
 	"context"

@@ -1,7 +1,8 @@
-package checkrun
+package githubapi
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/google/go-github/v69/github"
@@ -11,7 +12,7 @@ import (
 func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *github.Client, logger *slog.Logger) (*github.CheckRun, error) {
 	if sha == "" {
 		logger.Warn("SHA is empty, skipping check run creation")
-		return nil, nil
+		return nil, errors.New("SHA is empty")
 	}
 
 	ctx := context.Background()
@@ -26,9 +27,10 @@ func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *gi
 		},
 	})
 	if err != nil {
-		logger.Error("failed to create check run", slog.String("error", err.Error()))
+		logger.Error("Failed to create check run", slog.String("error", err.Error()))
 		return nil, err
 	}
-	logger.Info("created check run", slog.Int64("check_run_id", checkRun.GetID()), slog.String("conclusion", conclusion))
+
+	logger.Info("Created check run", slog.Int64("check_run_id", checkRun.GetID()), slog.String("conclusion", conclusion))
 	return checkRun, nil
 }
