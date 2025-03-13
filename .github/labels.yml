@@ -1,16 +1,91 @@
 overwrite: true
-dry_run: true
+dry_run: false
 
-areas:
-  category_color: 0e8a16
-  labels:
-    - name: github-actions
-      description: Issues related to GitHub Actions
-    - name: build-release
-      description: Issues related to build and release
-    - name: code-generation
-      description: Issues related to code generation
+categories:
+  - name: area
+    category_color: 0e8a16
+    labels:
+      - name: github-actions
+        description: Issues related to GitHub Actions
+      - name: build-release
+        description: Issues related to build and release
+      - name: code-generation
+        description: Issues related to code generation
+  - name: kind
+    category_color: fef2c0
+    labels:
+      - name: bug
+        description: Bug report
+        color: B60205
+      - name: deprecation
+        description: Categorizes issue or PR as related to a feature/enhancement marked for deprecation.
+      - name: documentation
+        description: Improvements or additions to documentation
+      - name: feature
+        description: Categorizes issue or PR as related to a new feature.
+  - name: lifecycle
+    category_color: 006b75
+    labels:
+      - name: active
+        description: Indicates that the issue is currently being worked on
+      - name: frozen
+        description: Indicates that an issue or PR should not be auto-closed due to staleness.
+      - name: rotten
+        description: Denotes an issue or PR that has aged beyond stale and will be auto-closed.
+      - name: stale
+        description: Denotes an issue or PR has remained open with no activity and has become stale.
 
+  - name: do-not-merge
+    category_color: E99695
+    labels:
+      - name: docs
+        description: Needs documentation updates before merging
+      - name: hold
+        description: A hold command has been issued to prevent merging (/hold is not implemented for prow-lite)
+
+  - name: priority
+    category_color: 0052cc
+    labels:
+      - name: awaiting-evidence
+        description: Lowest priority. Possibly useful, but needs additional details to determine priority or implement.
+      - name: backlog
+        description: Higher priority than priority/awaiting-evidence, but has not been prioritized for current milestone.
+      - name: important-soon
+        description: Needs to be addressed soon, ideally for the current or next milestone.
+      - name: important-longterm
+        description: Important, but not a priority for the current or next milestone.
+      - name: critical-urgent
+        description: Highest priority. Needs to be addressed immediately.
+
+  - name: size
+    category_color: 5319e7
+    labels:
+      - name: XS
+        description: Denotes a PR that changes 0-9 lines.
+      - name: S
+        description: Denotes a PR that changes 10-29 lines.
+      - name: M
+        description: Denotes a PR that changes 30-99 lines.
+      - name: L
+        description: Denotes a PR that changes 100-499 lines.
+      - name: XL
+        description: Denotes a PR that changes 500-999 lines.
+      - name: XXL
+        description: Denotes a PR that changes 1000+ lines.
+
+  - name: triage
+    category_color: 5319e7
+    labels:
+      - name: accepted
+        description: Issue or PR is ready to be actively worked.
+      - name: duplicate
+        description: Issue or PR is a duplicate of another issue or PR.
+      - name: needs-information
+        description: Issue or PR needs more information before it can be triaged.
+      - name: not-reproducible
+        description: Issue or PR cannot be reproduced.
+      - name: nofix
+        description: Issue or PR will not be fixed or worked on.
 extra_labels:
   - name: lgtm
     description: Approved by reviewers
