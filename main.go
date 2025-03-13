@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -8,19 +9,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v69/github"
 	"github.com/lmittmann/tint"
+	"github.com/patrickblackjr/prow-lite/cmd/labelsync"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	sloggin "github.com/samber/slog-gin"
 )
 
 var logLevel = new(slog.LevelVar)
 
-type ProwLiteGitHubClient struct {
-	client *github.Client
-}
+var (
+	runMode string
+	module  string
+)
 
 func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 	r := gin.New()
-	r.SetTrustedProxies(nil)
+	if err := r.SetTrustedProxies(nil); err != nil {
+		logger.Error("failed to set trusted proxies", slog.Any("error", err.Error()))
+	}
 	r.Use(sloggin.New(logger))
 	r.Use(gin.Recovery())
 
@@ -31,13 +36,11 @@ func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 	})
 
 	githubapi.RegisterEventHandlers(r, client, logger, githubapi.ProcessComment)
-	githubapi.EnsureLabels("patrickblackjr", []string{"lgtm"}, client, logger)
 
 	return r
 }
 
 func main() {
-
 	logLevel.Set(slog.LevelDebug)
 	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{Level: logLevel}))
 
@@ -46,8 +49,30 @@ func main() {
 		slog.Error(err.Error())
 		os.Exit(2)
 	}
-	r := setupRouter(client.GetClient(logger), logger)
 
-	logger.Info("server is running", slog.String("port", "8080"))
-	r.Run(":8080")
+	flag.StringVar(&runMode, "run-mode", "", "run-mode: standalone or ci")
+	flag.StringVar(&module, "module", "", "module: prow or labelsync")
+	flag.Parse()
+
+	// default to standalone
+	if runMode == "" && module == "" || runMode == "standalone" {
+		r := setupRouter(client.GetClient(logger), logger)
+
+		logger.Info("server is running", slog.String("port", "8080"))
+		if err := r.Run(":8080"); err != nil {
+			logger.Error("failed to run server", slog.Any("error", err.Error()))
+		}
+	}
+
+	if runMode == "ci" {
+		if module == "prow" {
+			logger.Error("Prow CI mode not implemented yet")
+			os.Exit(1)
+		}
+		if module == "labelsync" || module == "label-sync" || module == "" {
+			labelsync.LabelSync()
+			logger.Info("label sync completed")
+		}
+
+	}
 }
