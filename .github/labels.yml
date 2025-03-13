@@ -1,0 +1,20 @@
+overwrite: true
+dry_run: true
+
+areas:
+  category_color: 0e8a16
+  labels:
+    - name: github-actions
+      description: Issues related to GitHub Actions
+    - name: build-release
+      description: Issues related to build and release
+    - name: code-generation
+      description: Issues related to code generation
+
+extra_labels:
+  - name: lgtm
+    description: Approved by reviewers
+    color: 0e8a16
+  - name: do-not-merge
+    description: Do not merge
+    color: b60205
