@@ -69,23 +69,8 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 		repo := event.GetRepo().GetName()
 		prNumber := *event.PullRequest.Number
 
-		// Ensure the "do-not-merge" label exists
-		_, _, err := client.Issues.GetLabel(ctx, owner, repo, "do-not-merge")
-		if err != nil {
-			_, _, err = client.Issues.CreateLabel(ctx, owner, repo, &github.Label{
-				Name:        github.Ptr("do-not-merge"),
-				Color:       github.Ptr("b60205"),
-				Description: github.Ptr("Do not merge this PR"),
-			})
-			if err != nil {
-				logger.Error("failed to create do-not-merge label", slog.String("error", err.Error()))
-				return
-			}
-			logger.Info("created do-not-merge label")
-		}
-
 		// Add the "do-not-merge" label to the pull request
-		_, _, err = client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"do-not-merge"})
+		_, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"do-not-merge"})
 		if err != nil {
 			logger.Error("failed to add do-not-merge label", slog.String("error", err.Error()))
 			return
