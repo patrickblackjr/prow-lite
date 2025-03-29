@@ -1,0 +1,61 @@
+name: Tests
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.24", "1.23", "1.22"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install dependencies and run tests
+        run: |
+          go mod tidy
+          go test ./... -coverprofile=coverage-${{ matrix.go-version }}.out
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.go-version }}
+          path: coverage-${{ matrix.go-version }}.out
+
+  comment-coverage:
+    name: Comment coverage results on PRs
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download and aggregate coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-*
+          path: ./coverage-reports/
+
+      - name: Generate coverage report comment file
+        run: |
+          echo "Coverage Report:" > comment.txt
+          for file in ./coverage-reports/*.out; do
+            COVERAGE=$(go tool cover -func=$file | grep total | awk '{print $3}')
+            echo "$(basename $file): $COVERAGE" >> comment.txt
+          done
+
+      - name: Post coverage comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Coverage Report
+          message: |
+            ```txt
+            $(cat comment.txt)
+            ```
