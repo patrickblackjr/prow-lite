@@ -54,4 +54,4 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Coverage report
-          message: ${{ steps.generate-coverage-report.outputs.comment }}
+          message: ${{ steps.generate-coverage-report.outputs.coverage }}
