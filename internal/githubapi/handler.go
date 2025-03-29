@@ -97,6 +97,9 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 			AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
 		}
 
-		CreateCheckRun(owner, repo, GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
+		_, err = CreateCheckRun(owner, repo, GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
+		if err != nil {
+			logger.Error("failed to create check run", slog.String("error", err.Error()))
+		}
 	}
 }
