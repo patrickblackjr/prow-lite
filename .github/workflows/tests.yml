@@ -36,6 +36,7 @@ jobs:
           path: coverage.txt
 
   comment-coverage:
+    if: github.event_name == 'pull_request'
     name: Comment coverage results on PRs
     needs: test
     runs-on: ubuntu-latest
