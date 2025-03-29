@@ -25,36 +25,24 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           go mod tidy
-          go test ./... -coverprofile=coverage-${{ matrix.go-version }}.out
+          go test -cover -coverprofile=coverage.txt ./...
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.go-version }}
-          path: coverage-${{ matrix.go-version }}.out
+          path: coverage.txt
 
   comment-coverage:
     name: Comment coverage results on PRs
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
     steps:
-      - name: Download and aggregate coverage reports
-        uses: actions/download-artifact@v4
+      - uses: fgrosse/go-coverage-report@v1.1.1
         with:
-          pattern: coverage-report-*
-          path: ./coverage-reports/
-
-      - name: Generate coverage report comment
-        id: generate-coverage-report
-        run: |
-          COVERAGE=$(go tool cover -func=$file | grep total | awk '{print $3}')
-          echo $COVERAGE >> "$GITHUB_ENV"
-
-      - name: Post coverage comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: Coverage report
-          message: |
-            ```
-            ${{ env.COVERAGE }}
-            ```
+          coverage-artifact-name: "code-coverage" # can be omitted if you used this default value
+          coverage-file-name: "coverage.txt" # can be omitted if you used this default value
