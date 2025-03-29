@@ -48,10 +48,13 @@ jobs:
         id: generate-coverage-report
         run: |
           COVERAGE=$(go tool cover -func=$file | grep total | awk '{print $3}')
-          echo $COVERAGE >> $GITHUB_OUTPUT
+          echo $COVERAGE >> "$GITHUB_ENV"
 
       - name: Post coverage comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Coverage report
-          message: ${{ steps.generate-coverage-report.outputs.coverage }}
+          message: |
+            ```
+            ${{ env.COVERAGE }}
+            ```
