@@ -40,7 +40,7 @@ jobs:
       - name: Download and aggregate coverage reports
         uses: actions/download-artifact@v4
         with:
-          name: coverage-report-*
+          pattern: coverage-report-*
           path: ./coverage-reports/
 
       - name: Generate coverage report comment file
