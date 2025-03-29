@@ -46,19 +46,17 @@ jobs:
           pattern: coverage-report-*
           path: ./coverage-reports/
 
-      - name: Generate coverage report comment file
+      - name: Generate coverage report comment
+        id: generate-coverage-report
         run: |
-          echo "Coverage Report:" > comment.txt
+          echo "Coverage Report:" >> $GITHUB_OUTPUT
           for file in ./coverage-reports/*.out; do
             COVERAGE=$(go tool cover -func=$file | grep total | awk '{print $3}')
-            echo "$(basename $file): $COVERAGE" >> comment.txt
+            echo "$(basename $file): $COVERAGE" >> $GITHUB_OUTPUT
           done
 
       - name: Post coverage comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Coverage Report
-          message: |
-            ```txt
-            $(cat comment.txt)
-            ```
+          message: ${{ steps.generate-coverage-report.outputs.comment }}
