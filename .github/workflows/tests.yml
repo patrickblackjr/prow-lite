@@ -30,7 +30,7 @@ jobs:
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ matrix.go-version }}
+          name: coverage-report
           path: coverage.txt
 
   comment-coverage:
@@ -44,5 +44,5 @@ jobs:
     steps:
       - uses: fgrosse/go-coverage-report@v1.1.1
         with:
-          coverage-artifact-name: "code-coverage" # can be omitted if you used this default value
-          coverage-file-name: "coverage.txt" # can be omitted if you used this default value
+          coverage-artifact-name: coverage-report
+          coverage-file-name: "coverage.txt"
