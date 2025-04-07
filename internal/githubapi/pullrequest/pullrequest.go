@@ -9,16 +9,18 @@ import (
 
 // Fetches PR SHA
 func GetPRSHA(owner, repo string, prNumber int, client *github.Client, logger *slog.Logger) (string, error) {
-	ctx := context.Background()
-	pr, _, err := client.PullRequests.Get(ctx, owner, repo, prNumber)
+	pr, _, err := client.PullRequests.Get(context.Background(), owner, repo, prNumber)
+
 	if err != nil {
-		logger.Error("failed to retrieve PR SHA", slog.String("error", err.Error()))
-		return "", err
+		logger.Error("failed to get pull request", slog.String("error", err.Error()))
+		return "", err // Return the error instead of nil
 	}
-	if pr != nil {
-		return pr.GetHead().GetSHA(), nil
+	if pr == nil || pr.Head == nil || pr.Head.SHA == nil {
+		logger.Warn("pull request or SHA is nil")
+		return "", nil
 	}
-	return "", nil
+
+	return *pr.Head.SHA, nil
 }
 
 func RemoveLabel(owner, repo string, prNumber int, label string, client *github.Client, logger *slog.Logger) error {
