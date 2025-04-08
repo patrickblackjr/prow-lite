@@ -8,8 +8,6 @@
         ":dependencyDashboard",
         ":semanticCommits",
         ":enablePreCommit",
-        ":automergeDigest",
-        ":automergeBranch",
         "helpers:pinGitHubActionDigests",
         ":pinDependencies",
         ":pinDevDependencies"
