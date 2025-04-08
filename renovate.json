@@ -1,6 +1,24 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "config:recommended"
+        "config:base",
+        "docker:enableMajor",
+        ":disableRateLimiting",
+        ":dependencyDashboard",
+        ":semanticCommits",
+        ":enablePreCommit",
+        ":automergeDigest",
+        ":automergeBranch",
+        "helpers:pinGitHubActionDigests",
+        ":pinDependencies",
+        ":pinDevDependencies"
+    ],
+    "dependencyDashboard": true,
+    "suppressNotifications": [
+        "prIgnoreNotification"
+    ],
+    "rebaseWhen": "conflicted",
+    "schedule": [
+        "every day"
     ]
 }

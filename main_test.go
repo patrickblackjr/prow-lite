@@ -1,13 +1,37 @@
 package main
 
+<<<<<<< Updated upstream
+// func TestFailure(t *testing.T) {
+// 	gin.SetMode(gin.TestMode)
+// 	mockedHttpClient := mock.NewMockedHTTPClient(mock.WithRequestMatchHandler(
+// 		mock.GetOctocat,
+// 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 			http.Error(w, "not found", http.StatusNotFound)
+// 		}),
+// 	))
+// 	client := github.NewClient(mockedHttpClient)
+// 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+// 	r := setupRouter(client, logger)
+=======
 import (
 	"log/slog"
+	"os"
 	"reflect"
 	"testing"
+>>>>>>> Stashed changes
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v70/github"
-)
+// 	req, _ := http.NewRequest("GET", "/", nil)
+// 	w := httptest.NewRecorder()
+// 	r.ServeHTTP(w, req)
+
+<<<<<<< Updated upstream
+// 	assert.Equal(t, http.StatusNotFound, w.Code)
+// 	assert.Contains(t, w.Body.String(), "not found")
+// }
+=======
+func setupLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+}
 
 func Test_setupRouter(t *testing.T) {
 	type args struct {
@@ -29,16 +53,19 @@ func Test_setupRouter(t *testing.T) {
 		})
 	}
 }
+>>>>>>> Stashed changes
 
-func Test_main(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			main()
-		})
-	}
-}
+// func TestMainRoute(t *testing.T) {
+// 	gin.SetMode(gin.TestMode)
+// 	mockedHttpClient := mock.NewMockedHTTPClient(mock.WithRequestMatch(mock.GetOctocat))
+// 	client := github.NewClient(mockedHttpClient)
+// 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+// 	r := setupRouter(client, logger)
+
+// 	req, _ := http.NewRequest("GET", "/", nil)
+// 	w := httptest.NewRecorder()
+// 	r.ServeHTTP(w, req)
+
+// 	assert.Equal(t, http.StatusOK, w.Code)
+// 	assert.Contains(t, w.Body.String(), "ok")
+// }
