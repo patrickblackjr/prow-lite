@@ -9,7 +9,9 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi/checkrun"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
 
 func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
@@ -78,11 +80,17 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 		logger.Info("added do-not-merge label")
 
 		if *event.Action == "reopened" {
-			RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
-			AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
+			pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
+			pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
 		}
 
-		_, err = CreateCheckRun(owner, repo, GetPRSHA(owner, repo, prNumber, client, logger), "neutral", "Approval needed", client, logger)
+		// Get PR SHA
+		sha, err := pullrequest.GetPRSHA(owner, repo, prNumber, client, logger)
+		if err != nil {
+			logger.Error("failed to get PR SHA", slog.String("error", err.Error()))
+		}
+
+		_, err = checkrun.CreateCheckRun(owner, repo, sha, "neutral", "Approval needed", client, logger)
 		if err != nil {
 			logger.Error("failed to create check run", slog.String("error", err.Error()))
 		}

@@ -4,17 +4,13 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 )
 
 // CreateCheckRun creates or updates a check run
 func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *github.Client, logger *slog.Logger) (*github.CheckRun, error) {
-	if sha == "" {
-		logger.Warn("SHA is empty, skipping check run creation")
-		return nil, nil
-	}
-
 	ctx := context.Background()
+
 	checkRun, _, err := client.Checks.CreateCheckRun(ctx, owner, repo, github.CreateCheckRunOptions{
 		Name:       "LGTM",
 		HeadSHA:    sha,
@@ -29,6 +25,7 @@ func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *gi
 		logger.Error("failed to create check run", slog.String("error", err.Error()))
 		return nil, err
 	}
+
 	logger.Info("created check run", slog.Int64("check_run_id", checkRun.GetID()), slog.String("conclusion", conclusion))
 	return checkRun, nil
 }

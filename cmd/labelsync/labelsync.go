@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 	"github.com/lmittmann/tint"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"golang.org/x/sync/semaphore"
