@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 )
 
 // Fetches PR SHA
@@ -25,12 +25,28 @@ func GetPRSHA(owner, repo string, prNumber int, client *github.Client, logger *s
 
 func RemoveLabel(owner, repo string, prNumber int, label string, client *github.Client, logger *slog.Logger) error {
 	ctx := context.Background()
-	_, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, label)
+	resp, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, label)
 	if err != nil {
-		logger.Warn("Failed to remove label", slog.String("label", label), slog.String("error", err.Error()))
+		if logger != nil {
+			logger.Warn("Failed to remove label", slog.String("label", label), slog.String("error", err.Error()))
+		}
 		return err
 	}
-	logger.Info("Removed label", slog.String("label", label))
+	if resp == nil {
+		if logger != nil {
+			logger.Warn("Received nil response while removing label", slog.String("label", label))
+		}
+		return nil
+	}
+	if resp.StatusCode != 200 {
+		if logger != nil {
+			logger.Warn("Unexpected response status while removing label", slog.String("label", label), slog.Int("status_code", resp.StatusCode))
+		}
+		return nil
+	}
+	if logger != nil {
+		logger.Info("Removed label", slog.String("label", label))
+	}
 	return nil
 }
 

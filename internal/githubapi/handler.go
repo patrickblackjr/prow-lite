@@ -9,7 +9,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/checkrun"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )

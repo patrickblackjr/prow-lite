@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 )
 
 // CreateCheckRun creates or updates a check run
