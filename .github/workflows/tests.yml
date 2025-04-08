@@ -45,7 +45,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: fgrosse/go-coverage-report@ba3f798d6f32b9b16faea37cc7192261bb25b192 # v1.1.1
+      - uses: fgrosse/go-coverage-report@8c1d1a09864211d258937b1b1a5b849f7e4f2682 # v1.2.0
         with:
           coverage-artifact-name: coverage-report
           coverage-file-name: "coverage.txt"
