@@ -19,6 +19,6 @@
     ],
     "rebaseWhen": "conflicted",
     "schedule": [
-        "every day"
+        "* 0-3 * * *"
     ]
 }
