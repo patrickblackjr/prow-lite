@@ -13,11 +13,7 @@ func GetPRSHA(owner, repo string, prNumber int, client *github.Client, logger *s
 
 	if err != nil {
 		logger.Error("failed to get pull request", slog.String("error", err.Error()))
-		return "", err // Return the error instead of nil
-	}
-	if pr == nil || pr.Head == nil || pr.Head.SHA == nil {
-		logger.Warn("pull request or SHA is nil")
-		return "", nil
+		return "", err
 	}
 
 	return *pr.Head.SHA, nil
@@ -25,28 +21,17 @@ func GetPRSHA(owner, repo string, prNumber int, client *github.Client, logger *s
 
 func RemoveLabel(owner, repo string, prNumber int, label string, client *github.Client, logger *slog.Logger) error {
 	ctx := context.Background()
-	resp, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, label)
+	_, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, label)
 	if err != nil {
 		if logger != nil {
 			logger.Warn("Failed to remove label", slog.String("label", label), slog.String("error", err.Error()))
 		}
 		return err
 	}
-	if resp == nil {
-		if logger != nil {
-			logger.Warn("Received nil response while removing label", slog.String("label", label))
-		}
-		return nil
-	}
-	if resp.StatusCode != 200 {
-		if logger != nil {
-			logger.Warn("Unexpected response status while removing label", slog.String("label", label), slog.Int("status_code", resp.StatusCode))
-		}
-		return nil
-	}
 	if logger != nil {
 		logger.Info("Removed label", slog.String("label", label))
 	}
+
 	return nil
 }
 

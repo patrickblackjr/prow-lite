@@ -33,6 +33,22 @@ func TestGetPRSHA_Success(t *testing.T) {
 	assert.Equal(t, "test-sha", sha)
 }
 
+func TestGetPRSHA_Failure(t *testing.T) {
+	logger := setupLogger()
+	mockClient := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.GetReposPullsByOwnerByRepoByPullNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "failed to get PR", http.StatusInternalServerError)
+			}),
+		),
+	))
+
+	sha, err := pullrequest.GetPRSHA("owner", "repo", 1, mockClient, logger)
+	assert.Error(t, err)
+	assert.Empty(t, sha)
+}
+
 func TestRemoveLabel_Success(t *testing.T) {
 	logger := setupLogger()
 	mockClient := github.NewClient(mock.NewMockedHTTPClient(
