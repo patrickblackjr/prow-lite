@@ -10,7 +10,7 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/app
+    # main: ./cmd/app
 
 changelog:
   sort: asc
