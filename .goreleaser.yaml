@@ -36,6 +36,7 @@ changelog:
       order: 400
     - title: "Other work"
       order: 999
+  format: "{{.Message}} ({{.SHA}} by @{{.AuthorUsername}})"
   filters:
     exclude:
       - "^test:"
