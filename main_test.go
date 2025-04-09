@@ -2,7 +2,6 @@ package main
 
 import (
 	"log/slog"
-	"os"
 	"reflect"
 	"testing"
 
@@ -10,13 +9,9 @@ import (
 	"github.com/google/go-github/v70/github"
 )
 
-// 	req, _ := http.NewRequest("GET", "/", nil)
-// 	w := httptest.NewRecorder()
-// 	r.ServeHTTP(w, req)
-
-func setupLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-}
+// func setupLogger() *slog.Logger {
+// 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+// }
 
 func Test_setupRouter(t *testing.T) {
 	type args struct {
