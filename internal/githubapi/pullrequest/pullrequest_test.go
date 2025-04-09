@@ -84,7 +84,7 @@ func TestAddComment_Success(t *testing.T) {
 	mockClient := github.NewClient(mock.NewMockedHTTPClient(
 		mock.WithRequestMatch(
 			mock.PostReposIssuesCommentsByOwnerByRepoByIssueNumber,
-			github.IssueComment{ID: github.Int64(1)},
+			github.IssueComment{ID: github.Ptr(int64(1))},
 		),
 	))
 

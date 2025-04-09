@@ -80,8 +80,12 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 		logger.Info("added do-not-merge label")
 
 		if *event.Action == "reopened" {
-			pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger)
-			pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger)
+			if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
+				logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
+			}
+			if err := pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger); err != nil {
+				logger.Error("failed to add comment", slog.String("error", err.Error()))
+			}
 		}
 
 		// Get PR SHA
