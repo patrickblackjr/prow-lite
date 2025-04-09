@@ -4,8 +4,8 @@ name: goreleaser
 on:
   pull_request:
   push:
-    branches:
-      - main
+    tags:
+      - "*"
 
 permissions:
   contents: write
@@ -27,7 +27,8 @@ jobs:
         with:
           go-version: stable
 
-      - name: Run GoReleaser
+      - name: Validate
+        if: github.event_name == 'pull_request'
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
