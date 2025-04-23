@@ -27,6 +27,7 @@ categories:
         description: Improvements or additions to documentation
       - name: feature
         description: Categorizes issue or PR as related to a new feature.
+
   - name: lifecycle
     category_color: 006b75
     labels:
@@ -91,6 +92,7 @@ categories:
         description: Issue or PR cannot be reproduced.
       - name: nofix
         description: Issue or PR will not be fixed or worked on.
+
 extra_labels:
   - name: lgtm
     description: Approved by reviewers
