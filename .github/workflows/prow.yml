@@ -1,9 +1,12 @@
-name: Run Prow Lite
+name: Prow Lite
 
 on:
   issue_comment:
     types:
       - created
+
+env:
+  PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
 
 jobs:
   run:
@@ -25,7 +28,7 @@ jobs:
         run: |
           go mod tidy
 
-      - name: Run Prow
+      - name: Run Prow Lite
         run: |
           go version
           go run .
