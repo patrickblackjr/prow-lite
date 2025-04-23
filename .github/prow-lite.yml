@@ -1,6 +1,6 @@
 github:
-  app_id: 1123
-  installation_id: 1233
+  app_id: 269804
+  installation_id: 32477892
 features:
   label_sync:
     path: .github/labels.yml
