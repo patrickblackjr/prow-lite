@@ -1,6 +1,6 @@
 module github.com/patrickblackjr/prow-lite
 
-go 1.24.1
+go 1.24.2
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.14.0

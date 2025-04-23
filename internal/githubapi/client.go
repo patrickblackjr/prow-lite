@@ -4,10 +4,12 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v70/github"
+	"github.com/patrickblackjr/prow-lite/internal/config"
 )
 
 // ProwLiteGitHubClient is a struct for the GitHub client
@@ -22,7 +24,10 @@ type ProwGitHubClient interface {
 }
 
 func NewGithubClient(logger *slog.Logger) (*ProwLiteGitHubClient, error) {
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 269804, 32477892, "prow-dev.pem")
+	config := config.GetProwLiteConfig(logger)
+	privateKey := os.Getenv("PROW_GITHUB_PRIVATE_KEY")
+
+	itr, err := ghinstallation.New(http.DefaultTransport, config.GitHub.GitHubAppId, config.GitHub.GitHubInstallationId, []byte(privateKey))
 	if err != nil {
 		logger.Error("failed to create github app client")
 		return nil, err

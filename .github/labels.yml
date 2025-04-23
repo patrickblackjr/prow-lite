@@ -1,4 +1,5 @@
 overwrite: true
+prune: true
 dry_run: false
 
 categories:
@@ -11,12 +12,15 @@ categories:
         description: Issues related to build and release
       - name: code-generation
         description: Issues related to code generation
+      - name: labels
+        description: Issues related to the labels plugin or functionalities.
+
   - name: kind
     category_color: fef2c0
     labels:
       - name: bug
         description: Bug report
-        color: B60205
+        color: b60205
       - name: deprecation
         description: Categorizes issue or PR as related to a feature/enhancement marked for deprecation.
       - name: documentation
@@ -40,6 +44,7 @@ categories:
     labels:
       - name: docs
         description: Needs documentation updates before merging
+      - name: needs-approval
       - name: hold
         description: A hold command has been issued to prevent merging (/hold is not implemented for prow-lite)
 
@@ -90,6 +95,3 @@ extra_labels:
   - name: lgtm
     description: Approved by reviewers
     color: 0e8a16
-  - name: do-not-merge
-    description: Do not merge
-    color: b60205

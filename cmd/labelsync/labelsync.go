@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v70/github"
 	"github.com/lmittmann/tint"
+	"github.com/patrickblackjr/prow-lite/internal/config"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"golang.org/x/sync/semaphore"
 	"gopkg.in/yaml.v3"
@@ -24,6 +25,7 @@ var maxConcurrentRequests = 50
 
 type LabelSyncConfig struct {
 	Overwrite  bool `yaml:"overwrite"`
+	Prune      bool `yaml:"prune"` // Prune deletes labels not in the labels.yml file
 	DryRun     bool `yaml:"dry_run"`
 	Categories []struct {
 		Name          string `yaml:"name"`
@@ -43,15 +45,16 @@ type LabelSyncConfig struct {
 
 func GetLabelSyncConfig(logger *slog.Logger) *LabelSyncConfig {
 	lsc := &LabelSyncConfig{}
+	config := config.GetProwLiteConfig(logger)
 
-	yamlFile, err := os.ReadFile(".github/labels.yml")
+	yamlFile, err := os.ReadFile(config.Features.LabelSync.Path)
 	if err != nil {
-		log.Fatalf("failed to read labels.yml: %v", err)
+		log.Fatalf("failed to read %s: %v", config.Features.LabelSync.Path, err)
 	}
 
 	err = yaml.Unmarshal(yamlFile, lsc)
 	if err != nil {
-		log.Fatalf("failed to unmarshal labels.yml: %v", err)
+		log.Fatalf("failed to unmarshal %s: %v", config.Features.LabelSync.Path, err)
 	}
 
 	for _, category := range lsc.Categories {
@@ -189,6 +192,93 @@ func createExtraLabels(owner string, config *LabelSyncConfig, client *github.Cli
 	syncLabels(owner, labels, config.Overwrite, config.DryRun, client, logger)
 }
 
+func pruneLabels(owner string, config *LabelSyncConfig, client *github.Client, logger *slog.Logger) {
+	ctx := context.Background()
+
+	repos, _, err := client.Apps.ListRepos(ctx, &github.ListOptions{})
+	if err != nil {
+		logger.Error("failed to list repositories", slog.String("error", err.Error()))
+		return
+	}
+
+	if len(repos.Repositories) == 0 {
+		logger.Error("no repositories found", slog.String("owner", owner))
+		return
+	}
+
+	// Collect all configured labels
+	configuredLabels := make(map[string]struct{})
+	for _, category := range config.Categories {
+		for _, label := range category.Labels {
+			fullLabelName := category.Name + "/" + label.Name
+			configuredLabels[fullLabelName] = struct{}{}
+		}
+	}
+	for _, label := range config.ExtraLabels {
+		configuredLabels[label.Name] = struct{}{}
+	}
+
+	var wg sync.WaitGroup
+	sem := semaphore.NewWeighted(int64(maxConcurrentRequests))
+
+	for _, repo := range repos.Repositories {
+		if repo.GetArchived() {
+			logger.Debug("skipping archived repo", slog.String("repo", *repo.FullName))
+			continue
+		}
+		if repo.GetFork() {
+			logger.Debug("skipping forked repo", slog.String("repo", *repo.FullName))
+			continue
+		}
+
+		wg.Add(1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			logger.Error("failed to acquire semaphore", slog.String("error", err.Error()))
+			wg.Done()
+			return
+		}
+
+		go func(repo *github.Repository) {
+			defer wg.Done()
+			defer sem.Release(1)
+
+			var allLabels []*github.Label
+			opts := &github.ListOptions{PerPage: 100}
+			for {
+				labels, resp, err := client.Issues.ListLabels(ctx, owner, *repo.Name, opts)
+				if err != nil {
+					logger.Error("failed to list labels", slog.String("repo", *repo.FullName), slog.String("error", err.Error()))
+					return
+				}
+				allLabels = append(allLabels, labels...)
+				if resp.NextPage == 0 {
+					break
+				}
+				opts.Page = resp.NextPage
+			}
+
+			for _, label := range allLabels {
+				if _, exists := configuredLabels[*label.Name]; !exists {
+					logger.Debug("label not in config, attempting delete", slog.String("repo", *repo.FullName), slog.String("label", *label.Name))
+					if config.DryRun {
+						logger.Info("dry run: would delete label", slog.String("repo", *repo.FullName), slog.String("label", *label.Name))
+						continue
+					}
+					_, err := client.Issues.DeleteLabel(ctx, owner, *repo.Name, *label.Name)
+					if err != nil {
+						logger.Error("failed to delete label", slog.String("repo", *repo.FullName), slog.String("label", *label.Name), slog.String("error", err.Error()))
+					} else {
+						logger.Info("deleted label", slog.String("repo", *repo.FullName), slog.String("label", *label.Name))
+					}
+				}
+			}
+
+			logger.Debug("finished processing labels for repo", slog.String("repo", *repo.FullName))
+		}(repo)
+	}
+	wg.Wait()
+}
+
 func LabelSync() {
 	logLevel.Set(slog.LevelDebug)
 	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{Level: logLevel}))
@@ -205,4 +295,7 @@ func LabelSync() {
 	logger.Info("extra labels", slog.Any("extra_labels", lsc.ExtraLabels))
 	createLabels("patrickblackjr", lsc, client.GetClient(logger), logger)
 	createExtraLabels("patrickblackjr", lsc, client.GetClient(logger), logger)
+	if lsc.Prune {
+		pruneLabels("patrickblackjr", lsc, client.GetClient(logger), logger)
+	}
 }
