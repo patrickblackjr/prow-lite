@@ -11,6 +11,9 @@ on:
       - .github/labels.yml
       - .github/workflows/prow-labelsync.yml
 
+env:
+  PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
+
 jobs:
   run:
     runs-on: ubuntu-latest
