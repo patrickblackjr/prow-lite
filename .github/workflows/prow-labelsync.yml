@@ -1,4 +1,4 @@
-name: Run Prow Lite
+name: Prow Lite (Label Sync)
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
         run: |
           go mod tidy
 
-      - name: Run Prow
+      - name: Run Prow Lite (Label Sync)
         run: |
           go version
           go run . -module labelsync -run-mode ci
