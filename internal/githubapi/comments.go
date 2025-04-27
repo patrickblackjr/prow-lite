@@ -6,7 +6,7 @@ import (
 
 	"log/slog"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 )
 
 func ProcessComment(event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {

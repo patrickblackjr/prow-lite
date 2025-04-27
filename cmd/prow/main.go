@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/patrickblackjr/prow-lite/cmd/labelsync"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/patrickblackjr/prow-lite/internal/logging"
