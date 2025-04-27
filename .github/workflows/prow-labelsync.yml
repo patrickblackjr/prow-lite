@@ -11,6 +11,10 @@ on:
       - .github/labels.yml
       - .github/workflows/prow-labelsync.yml
 
+permissions:
+  contents: write
+  pull-requests: read
+
 env:
   PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
 
