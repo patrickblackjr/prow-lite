@@ -18,6 +18,7 @@ import (
 var (
 	mode   string
 	plugin string
+	event  string
 )
 
 func main() {
@@ -38,6 +39,22 @@ func main() {
 						Aliases:     []string{"m"},
 						Usage:       "Provide the Prow mode. One of: standalone, ci",
 						Destination: &mode,
+						Required:    true,
+					},
+					&cli.StringFlag{
+						Name:        "plugin",
+						Aliases:     []string{"p"},
+						Usage:       "Plugin to run. One of: event, labelsync",
+						Destination: &plugin,
+						Required:    false,
+						DefaultText: "event",
+					},
+					&cli.StringFlag{
+						Name:        "event",
+						Aliases:     []string{"e"},
+						Usage:       "Content of the event to be handled. --plugin flag must be event to use this.",
+						Destination: &event,
+						Required:    false,
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
@@ -47,8 +64,7 @@ func main() {
 						os.Exit(2)
 					}
 
-					// default to standalone
-					if mode == "" && plugin == "" || mode == "standalone" {
+					if mode == "standalone" {
 						r := setupRouter(client.GetClient(logger), logger)
 
 						logger.Info("server is running", slog.String("port", "8080"))
@@ -59,10 +75,18 @@ func main() {
 
 					if mode == "ci" {
 						if plugin == "event" {
-							logger.Error("Prow Lite CI mode not implemented yet")
-							os.Exit(1)
+							if event == "" {
+								logger.Error("event flag is required in CI mode with plugin 'event'")
+								os.Exit(1)
+							}
+
+							eventType := "issue_comment" // Replace with actual event type parsing logic
+							payload := []byte(event)     // Replace with actual payload parsing logic
+
+							handleEvent := githubapi.RegisterEventHandlers(nil, client.GetClient(logger), logger, githubapi.ProcessComment)
+							handleEvent(eventType, payload)
 						}
-						if plugin == "labelsync" || plugin == "label-sync" || plugin == "" {
+						if plugin == "labelsync" || plugin == "label-sync" {
 							labelsync.LabelSync()
 							logger.Info("label sync completed")
 						}

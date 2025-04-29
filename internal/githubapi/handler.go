@@ -14,7 +14,7 @@ import (
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
 
-func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
+func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) func(string, []byte) {
 	eventHandlers := map[string]func([]byte, *github.Client, *slog.Logger){
 		"issue_comment": func(request []byte, client *github.Client, logger *slog.Logger) {
 			handleIssueCommentEvent(request, client, logger, processComment)
@@ -42,6 +42,15 @@ func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Lo
 			logger.Warn("unhandled event type", slog.String("event_type", ghEventHeader))
 		}
 	})
+
+	// Return a function to handle events directly (for CI mode)
+	return func(eventType string, payload []byte) {
+		if handler, ok := eventHandlers[eventType]; ok {
+			handler(payload, client, logger)
+		} else {
+			logger.Warn("unhandled event type", slog.String("event_type", eventType))
+		}
+	}
 }
 
 func handleIssueCommentEvent(request []byte, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
