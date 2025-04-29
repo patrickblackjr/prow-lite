@@ -88,7 +88,7 @@ func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "ok",
+			"status": "ok",
 		})
 	})
 
