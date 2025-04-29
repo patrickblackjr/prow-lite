@@ -25,23 +25,25 @@ func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Lo
 		// Add more event handlers here
 	}
 
-	r.POST("/webhook", func(c *gin.Context) {
-		ghEventHeader := c.Request.Header.Get("X-GitHub-Event")
-		logger.Info(string(ghEventHeader))
-		request, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
+	if r != nil {
+		r.POST("/webhook", func(c *gin.Context) {
+			ghEventHeader := c.Request.Header.Get("X-GitHub-Event")
+			logger.Info(string(ghEventHeader))
+			request, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
 
-		c.JSON(200, gin.H{"event_type": ghEventHeader})
+			c.JSON(200, gin.H{"event_type": ghEventHeader})
 
-		if handler, ok := eventHandlers[ghEventHeader]; ok {
-			handler(request, client, logger)
-		} else {
-			logger.Warn("unhandled event type", slog.String("event_type", ghEventHeader))
-		}
-	})
+			if handler, ok := eventHandlers[ghEventHeader]; ok {
+				handler(request, client, logger)
+			} else {
+				logger.Warn("unhandled event type", slog.String("event_type", ghEventHeader))
+			}
+		})
+	}
 
 	// Return a function to handle events directly (for CI mode)
 	return func(eventType string, payload []byte) {

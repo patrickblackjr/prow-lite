@@ -35,4 +35,4 @@ jobs:
       - name: Run Prow Lite
         run: |
           go version
-          go run cmd/prow/main.go run --mode ci --plugin event --event "${{ toJson(github.event) }}"
+          go run cmd/prow/main.go run --mode ci --plugin event --event '${{ toJson(github.event) }}'
