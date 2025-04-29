@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -80,11 +81,22 @@ func main() {
 								os.Exit(1)
 							}
 
-							eventType := "issue_comment" // Replace with actual event type parsing logic
-							payload := []byte(event)     // Replace with actual payload parsing logic
+							// Validate and parse the JSON payload
+							var eventPayload map[string]interface{}
+							if err := json.Unmarshal([]byte(event), &eventPayload); err != nil {
+								logger.Error("failed to parse event payload", slog.String("error", err.Error()))
+								os.Exit(1)
+							}
+
+							// Extract the event type (e.g., "issue_comment")
+							eventType, ok := eventPayload["action"].(string)
+							if !ok || eventType == "" {
+								logger.Error("failed to determine event type from payload")
+								os.Exit(1)
+							}
 
 							handleEvent := githubapi.RegisterEventHandlers(nil, client.GetClient(logger), logger, githubapi.ProcessComment)
-							handleEvent(eventType, payload)
+							handleEvent(eventType, []byte(event))
 						}
 						if plugin == "labelsync" || plugin == "label-sync" {
 							labelsync.LabelSync()
