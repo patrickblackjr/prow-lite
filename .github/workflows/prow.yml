@@ -34,7 +34,7 @@ jobs:
 
       - name: Convert GitHub event to single-line JSON
         run: |
-          echo "EVENT=$(echo '${{ toJson(github.event) }}' | jq -c)" >> $GITHUB_ENV
+          echo "EVENT=$(echo '${{ toJson(github.event) }}' | jq -c '.')" >> $GITHUB_ENV
 
       - name: Run Prow Lite
         run: |
