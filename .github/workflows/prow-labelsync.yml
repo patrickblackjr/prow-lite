@@ -11,6 +11,10 @@ on:
       - .github/labels.yml
       - .github/workflows/prow-labelsync.yml
 
+permissions:
+  contents: write
+  pull-requests: read
+
 env:
   PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
 
@@ -37,4 +41,4 @@ jobs:
       - name: Run Prow Lite (Label Sync)
         run: |
           go version
-          go run . -module labelsync -run-mode ci
+          go run cmd/prow/main.go run --mode ci --plugin labelsync

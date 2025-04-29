@@ -8,6 +8,10 @@ on:
 env:
   PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -31,4 +35,4 @@ jobs:
       - name: Run Prow Lite
         run: |
           go version
-          go run .
+          go run cmd/prow/main.go run --mode ci --plugin event --event ${{ github.event }}

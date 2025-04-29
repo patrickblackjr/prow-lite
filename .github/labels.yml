@@ -12,8 +12,10 @@ categories:
         description: Issues related to build and release
       - name: code-generation
         description: Issues related to code generation
-      - name: labels
-        description: Issues related to the labels plugin or functionalities.
+      - name: plugin-labelsync
+        description: Issues related to the labelsync plugin.
+      - name: plugin-lgtm
+        description: Issues related to the lgtm plugin.
 
   - name: kind
     category_color: fef2c0

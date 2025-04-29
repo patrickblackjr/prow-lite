@@ -12,7 +12,7 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-    # main: ./cmd/app
+    main: ./cmd/prow
 
 changelog:
   use: github
