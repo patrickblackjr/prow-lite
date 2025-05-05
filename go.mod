@@ -10,7 +10,7 @@ require (
 	github.com/migueleliasweb/go-github-mock v1.1.0
 	github.com/samber/slog-gin v1.15.0
 	github.com/stretchr/testify v1.10.0
-	github.com/urfave/cli/v3 v3.2.0
+	github.com/urfave/cli/v3 v3.3.2
 	golang.org/x/sync v0.13.0
 	gopkg.in/yaml.v3 v3.0.1
 )
