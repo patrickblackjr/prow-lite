@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v71 v71.0.0
 	github.com/lmittmann/tint v1.0.7
-	github.com/migueleliasweb/go-github-mock v1.1.0
+	github.com/migueleliasweb/go-github-mock v1.3.0
 	github.com/samber/slog-gin v1.15.0
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v3 v3.2.0
@@ -27,7 +27,6 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
-	github.com/google/go-github/v64 v64.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
