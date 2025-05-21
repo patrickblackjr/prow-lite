@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0
-	github.com/gin-gonic/gin v1.10.0
+	github.com/gin-gonic/gin v1.10.1
 	github.com/google/go-github/v71 v71.0.0
 	github.com/lmittmann/tint v1.0.7
 	github.com/migueleliasweb/go-github-mock v1.1.0
