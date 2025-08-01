@@ -33,8 +33,10 @@ jobs:
           go mod tidy
 
       - name: Convert GitHub event to single-line JSON
+        env:
+          EVENT: ${{ toJson(github.event) }}
         run: |
-          echo "EVENT=$(echo '${{ toJson(github.event) }}' | jq -c '.')" >> $GITHUB_ENV
+          echo "EVENT=$(jq -n --arg event \"$EVENT\" '$event | @json')" >> $GITHUB_ENV
 
       - name: Run Prow Lite
         run: |
