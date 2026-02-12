@@ -1,17 +1,17 @@
 module github.com/patrickblackjr/prow-lite
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v71 v71.0.0
 	github.com/lmittmann/tint v1.0.7
-	github.com/migueleliasweb/go-github-mock v1.1.0
+	github.com/migueleliasweb/go-github-mock v1.5.0
 	github.com/samber/slog-gin v1.15.0
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v3 v3.2.0
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -28,6 +28,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/go-github/v64 v64.0.0 // indirect
+	github.com/google/go-github/v73 v73.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
@@ -49,7 +50,7 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
