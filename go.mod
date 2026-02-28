@@ -1,11 +1,12 @@
 module github.com/patrickblackjr/prow-lite
 
-go 1.24.2
+go 1.25.0
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v71 v71.0.0
+	github.com/google/go-github/v84 v84.0.0
 	github.com/lmittmann/tint v1.0.7
 	github.com/migueleliasweb/go-github-mock v1.1.0
 	github.com/samber/slog-gin v1.15.0
@@ -28,7 +29,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/go-github/v64 v64.0.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
