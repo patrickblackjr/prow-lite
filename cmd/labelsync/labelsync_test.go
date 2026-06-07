@@ -192,7 +192,7 @@ func TestLabelNeedsUpdate(t *testing.T) {
 		{"description added where none existed",
 			&github.Label{Color: github.Ptr("ff0000")},
 			&github.Label{Color: github.Ptr("ff0000"), Description: github.Ptr("new")}, true},
-		{"desired description nil — existing not touched",
+		{"desired description nil...existing not touched",
 			&github.Label{Color: github.Ptr("ff0000"), Description: github.Ptr("keep")},
 			&github.Label{Color: github.Ptr("ff0000")}, false},
 		{"nothing changed",

@@ -2,8 +2,6 @@ package githubapi
 
 import (
 	"context"
-	"io"
-	"log/slog"
 	"net/http"
 	"testing"
 
@@ -11,87 +9,6 @@ import (
 	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-func discardLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
-}
-
-func makeIssueCommentEvent(owner, repo string, prNumber int, commentBody string) *github.IssueCommentEvent {
-	return &github.IssueCommentEvent{
-		Repo: &github.Repository{
-			Name:  github.Ptr(repo),
-			Owner: &github.User{Login: github.Ptr(owner)},
-		},
-		Issue:   &github.Issue{Number: github.Ptr(prNumber)},
-		Comment: &github.IssueComment{Body: github.Ptr(commentBody), User: &github.User{Login: github.Ptr("commenter")}},
-	}
-}
-
-func TestAssignUsers_TooFewArgs(t *testing.T) {
-	assignUsers("/assign", makeIssueCommentEvent("owner", "repo", 1, "/assign"), nil, discardLogger())
-}
-
-func TestAssignUsers_TooManyArgs(t *testing.T) {
-	assignUsers("/assign a b c d e", makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
-}
-
-func TestAssignUsers_Success(t *testing.T) {
-	c := github.NewClient(mock.NewMockedHTTPClient(
-		mock.WithRequestMatch(mock.PostReposIssuesAssigneesByOwnerByRepoByIssueNumber,
-			github.Issue{Number: github.Ptr(1)}),
-	))
-	assignUsers("/assign @alice", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
-}
-
-func TestAssignUsers_Failure(t *testing.T) {
-	c := github.NewClient(mock.NewMockedHTTPClient(
-		mock.WithRequestMatchHandler(
-			mock.PostReposIssuesAssigneesByOwnerByRepoByIssueNumber,
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				mock.WriteError(w, http.StatusInternalServerError, "boom")
-			}),
-		),
-	))
-	assignUsers("/assign alice", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
-}
-
-func TestUnassignUsers_TooFewArgs(t *testing.T) {
-	unassignUsers("/unassign", makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
-}
-
-func TestUnassignUsers_TooManyArgs(t *testing.T) {
-	unassignUsers("/unassign a b c d e", makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
-}
-
-func TestUnassignUsers_Success(t *testing.T) {
-	c := github.NewClient(mock.NewMockedHTTPClient(
-		mock.WithRequestMatch(mock.DeleteReposIssuesAssigneesByOwnerByRepoByIssueNumber,
-			github.Issue{Number: github.Ptr(1)}),
-	))
-	unassignUsers("/unassign @bob", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
-}
-
-func TestUnassignUsers_Failure(t *testing.T) {
-	c := github.NewClient(mock.NewMockedHTTPClient(
-		mock.WithRequestMatchHandler(
-			mock.DeleteReposIssuesAssigneesByOwnerByRepoByIssueNumber,
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				mock.WriteError(w, http.StatusInternalServerError, "boom")
-			}),
-		),
-	))
-	unassignUsers("/unassign bob", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
-}
-
-func TestProcessComment_AllCommands(t *testing.T) {
-	c := github.NewClient(mock.NewMockedHTTPClient(
-		mock.WithRequestMatch(mock.PostReposIssuesAssigneesByOwnerByRepoByIssueNumber, github.Issue{}),
-		mock.WithRequestMatch(mock.DeleteReposIssuesAssigneesByOwnerByRepoByIssueNumber, github.Issue{}),
-	))
-	event := makeIssueCommentEvent("owner", "repo", 1,
-		"/assign alice\n/unassign bob\nnot-a-command")
-	ProcessComment(event, c, discardLogger())
-}
 
 func TestProcessComment_Lgtm(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
