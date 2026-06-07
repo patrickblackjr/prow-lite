@@ -48,6 +48,12 @@ jobs:
       actions: read
       pull-requests: write
     steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
       - name: Upload coverage report to Codacy
+        shell: bash
         run: |
-          curl -L https://coverage.codacy.com/get.sh | sh -s -- -r ${{ secrets.CODACY_PROJECT_TOKEN }} -f coverage.txt
+          curl -L https://coverage.codacy.com/get.sh | bash -s -- -r ${{ secrets.CODACY_PROJECT_TOKEN }} -f coverage.txt
