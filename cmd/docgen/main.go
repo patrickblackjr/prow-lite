@@ -36,8 +36,10 @@ func render(path, tmpl string, data any) {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
 	if err := template.Must(template.New("").Funcs(funcs).Parse(tmpl)).Execute(f, data); err != nil {
+		panic(err)
+	}
+	if err := f.Close(); err != nil {
 		panic(err)
 	}
 }
