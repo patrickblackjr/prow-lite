@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -10,8 +10,9 @@ import (
 
 type ProwLiteConfig struct {
 	GitHub struct {
-		GitHubAppId          int64 `yaml:"app_id"`
-		GitHubInstallationId int64 `yaml:"installation_id"`
+		GitHubAppId          int64  `yaml:"app_id"`
+		GitHubInstallationId int64  `yaml:"installation_id"`
+		PrivateKeyPath       string `yaml:"private_key_path"`
 	} `yaml:"github"`
 	Features struct {
 		LabelSync struct {
@@ -20,18 +21,17 @@ type ProwLiteConfig struct {
 	} `yaml:"features"`
 }
 
-func GetProwLiteConfig(logger *slog.Logger) *ProwLiteConfig {
+func GetProwLiteConfig(_ *slog.Logger) (*ProwLiteConfig, error) {
 	plc := &ProwLiteConfig{}
 
 	yamlFile, err := os.ReadFile(".github/prow-lite.yml")
 	if err != nil {
-		log.Fatalf("failed to read prow-lite.yml: %v", err)
+		return nil, fmt.Errorf("read prow-lite.yml: %w", err)
 	}
 
-	err = yaml.Unmarshal(yamlFile, plc)
-	if err != nil {
-		log.Fatalf("failed to unmarshal prow-lite.yml: %v", err)
+	if err = yaml.Unmarshal(yamlFile, plc); err != nil {
+		return nil, fmt.Errorf("unmarshal prow-lite.yml: %w", err)
 	}
 
-	return plc
+	return plc, nil
 }

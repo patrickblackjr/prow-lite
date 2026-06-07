@@ -16,14 +16,17 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var (
-	mode   string
-	plugin string
-	event  string
-)
+var osExit = os.Exit
+var runServer = func(r *gin.Engine, addr string) error { return r.Run(addr) }
 
 func main() {
 	logger := logging.SetupLogging()
+
+	var (
+		mode   string
+		plugin string
+		event  string
+	)
 
 	cmd := &cli.Command{
 		Name:    "prow",
@@ -47,62 +50,23 @@ func main() {
 						Aliases:     []string{"p"},
 						Usage:       "Plugin to run. One of: event, labelsync",
 						Destination: &plugin,
-						Required:    false,
-						DefaultText: "event",
+						Value:       "event",
 					},
 					&cli.StringFlag{
 						Name:        "event",
 						Aliases:     []string{"e"},
 						Usage:       "Content of the event to be handled. --plugin flag must be event to use this.",
 						Destination: &event,
-						Required:    false,
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 					client, err := githubapi.NewGithubClient(logger)
 					if err != nil {
-						slog.Error(err.Error())
-						os.Exit(2)
+						logger.Error("failed to create GitHub client", slog.String("error", err.Error()))
+						osExit(2)
+						return nil
 					}
-
-					if mode == "standalone" {
-						r := setupRouter(client.GetClient(logger), logger)
-
-						logger.Info("server is running", slog.String("port", "8080"))
-						if err := r.Run(":8080"); err != nil {
-							logger.Error("failed to run server", slog.Any("error", err.Error()))
-						}
-					}
-
-					if mode == "ci" {
-						if plugin == "event" {
-							if event == "" {
-								logger.Error("event flag is required in CI mode with plugin 'event'")
-								os.Exit(1)
-							}
-
-							// Validate and parse the JSON payload
-							var eventPayload map[string]interface{}
-							if err := json.Unmarshal([]byte(event), &eventPayload); err != nil {
-								logger.Error("failed to parse event payload", slog.String("error", err.Error()))
-								os.Exit(1)
-							}
-
-							// Extract the event type (e.g., "issue_comment")
-							eventType, ok := eventPayload["action"].(string)
-							if !ok || eventType == "" {
-								logger.Error("failed to determine event type from payload")
-								os.Exit(1)
-							}
-
-							handleEvent := githubapi.RegisterEventHandlers(nil, client.GetClient(logger), logger, githubapi.ProcessComment)
-							handleEvent(eventType, []byte(event))
-						}
-						if plugin == "labelsync" || plugin == "label-sync" {
-							labelsync.LabelSync()
-							logger.Info("label sync completed")
-						}
-					}
+					runAction(ctx, mode, plugin, event, client.GetClient(), logger)
 					return nil
 				},
 			},
@@ -114,18 +78,72 @@ func main() {
 	}
 }
 
+func runAction(ctx context.Context, mode, plugin, event string, client *github.Client, logger *slog.Logger) {
+	switch mode {
+	case "standalone":
+		r := setupRouter(client, logger)
+		logger.Info("server is running", slog.String("port", "8080"))
+		if err := runServer(r, ":8080"); err != nil {
+			logger.Error("failed to run server", slog.String("error", err.Error()))
+		}
+
+	case "ci":
+		switch plugin {
+		case "event":
+			if event == "" {
+				logger.Error("--event flag is required when --plugin=event")
+				osExit(1)
+				return
+			}
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(event), &payload); err != nil {
+				logger.Error("failed to parse event payload", slog.String("error", err.Error()))
+				osExit(1)
+				return
+			}
+			eventType, ok := payload["action"].(string)
+			if !ok || eventType == "" {
+				logger.Error("failed to determine event type from payload")
+				osExit(1)
+				return
+			}
+			handleEvent := githubapi.RegisterEventHandlers(nil, client, logger, githubapi.ProcessComment)
+			handleEvent(eventType, []byte(event))
+
+		case "labelsync", "label-sync":
+			lsc, err := labelsync.GetLabelSyncConfig(logger)
+			if err != nil {
+				logger.Error("failed to load label sync config", slog.String("error", err.Error()))
+				osExit(1)
+				return
+			}
+			logger.Info("starting label sync",
+				slog.Int("categories", len(lsc.Categories)),
+				slog.Int("extra_labels", len(lsc.ExtraLabels)),
+			)
+			syncer := labelsync.NewSyncer(lsc, client, logger)
+			if err := syncer.Run(ctx); err != nil {
+				logger.Error("label sync failed", slog.String("error", err.Error()))
+				osExit(1)
+				return
+			}
+			logger.Info("label sync complete")
+
+		default:
+			logger.Error("unknown plugin", slog.String("plugin", plugin))
+			osExit(1)
+		}
+	}
+}
+
 func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 	r := gin.New()
-	if err := r.SetTrustedProxies(nil); err != nil {
-		logger.Error("failed to set trusted proxies", slog.Any("error", err.Error()))
-	}
+	_ = r.SetTrustedProxies(nil)
 	r.Use(sloggin.New(logger))
 	r.Use(gin.Recovery())
 
 	r.GET("/", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
+		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	githubapi.RegisterEventHandlers(r, client, logger, githubapi.ProcessComment)
