@@ -50,8 +50,6 @@ func writeLabelSyncConfig(t *testing.T) {
 	t.Chdir(dir)
 }
 
-// --- main ---
-
 func TestMain_CLIError(t *testing.T) {
 	// Missing required --mode flag causes cmd.Run to return an error.
 	oldArgs := os.Args
@@ -71,8 +69,6 @@ func TestMain_ActionExitsWithCode2(t *testing.T) {
 	assert.Equal(t, 2, *code)
 }
 
-// --- setupRouter ---
-
 func TestSetupRouter(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient())
 	r := setupRouter(c, discardLogger())
@@ -84,8 +80,6 @@ func TestSetupRouter(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-// --- runAction: standalone ---
-
 func TestRunAction_Standalone(t *testing.T) {
 	noopServer(t)
 	runAction(context.Background(), "standalone", "", "", github.NewClient(nil), discardLogger())
@@ -96,8 +90,6 @@ func TestRunAction_Standalone_ServerError(t *testing.T) {
 	t.Cleanup(func() { runServer = func(r *gin.Engine, addr string) error { return r.Run(addr) } })
 	runAction(context.Background(), "standalone", "", "", github.NewClient(nil), discardLogger())
 }
-
-// --- runAction: ci/event ---
 
 func TestRunAction_CI_Event_EmptyEvent(t *testing.T) {
 	code := captureExit(t)
@@ -120,8 +112,6 @@ func TestRunAction_CI_Event_NoAction(t *testing.T) {
 func TestRunAction_CI_Event_Success(t *testing.T) {
 	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
 }
-
-// --- runAction: ci/labelsync ---
 
 func TestRunAction_CI_LabelSync_NoConfig(t *testing.T) {
 	code := captureExit(t)
@@ -170,15 +160,11 @@ func TestRunAction_CI_LabelSync_Success(t *testing.T) {
 	runAction(context.Background(), "ci", "labelsync", "", c, discardLogger())
 }
 
-// --- runAction: ci/unknown plugin ---
-
 func TestRunAction_CI_UnknownPlugin(t *testing.T) {
 	code := captureExit(t)
 	runAction(context.Background(), "ci", "unknown-plugin", "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
-
-// --- runAction: unknown mode ---
 
 func TestRunAction_UnknownMode(t *testing.T) {
 	runAction(context.Background(), "unknown-mode", "", "", github.NewClient(nil), discardLogger())
