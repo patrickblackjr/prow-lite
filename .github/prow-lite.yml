@@ -1,6 +1,7 @@
 github:
   app_id: 269804
   installation_id: 32477892
+  private_key_path: prow-lite-non-prod.2026-06-06.private-key.pem
 features:
   label_sync:
     path: .github/labels.yml

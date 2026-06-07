@@ -7,8 +7,7 @@ import (
 	"github.com/google/go-github/v71/github"
 )
 
-// CreateCheckRun creates or updates a check run
-func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *github.Client, logger *slog.Logger) (*github.CheckRun, error) {
+func CreateCheckRun(owner, repo, sha, conclusion, title string, client *github.Client, logger *slog.Logger) (*github.CheckRun, error) {
 	ctx := context.Background()
 
 	checkRun, _, err := client.Checks.CreateCheckRun(ctx, owner, repo, github.CreateCheckRunOptions{
@@ -17,8 +16,8 @@ func CreateCheckRun(owner, repo, sha, conclusion string, name string, client *gi
 		Status:     github.Ptr("completed"),
 		Conclusion: github.Ptr(conclusion),
 		Output: &github.CheckRunOutput{
-			Title:   github.Ptr(name),
-			Summary: github.Ptr("This PR is not approved."),
+			Title:   github.Ptr(title),
+			Summary: github.Ptr(title),
 		},
 	})
 	if err != nil {

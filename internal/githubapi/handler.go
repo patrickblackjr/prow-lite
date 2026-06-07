@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"net/http"
-
 	"log/slog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
@@ -22,30 +21,29 @@ func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Lo
 		"pull_request": func(request []byte, client *github.Client, logger *slog.Logger) {
 			handlePullRequestEvent(request, client, logger)
 		},
-		// Add more event handlers here
 	}
 
 	if r != nil {
 		r.POST("/webhook", func(c *gin.Context) {
-			ghEventHeader := c.Request.Header.Get("X-GitHub-Event")
-			logger.Info(string(ghEventHeader))
-			request, err := io.ReadAll(c.Request.Body)
+			eventType := c.Request.Header.Get("X-GitHub-Event")
+			logger.Info("received webhook", slog.String("event_type", eventType))
+
+			body, err := io.ReadAll(c.Request.Body)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
 
-			c.JSON(200, gin.H{"event_type": ghEventHeader})
+			c.JSON(http.StatusOK, gin.H{"event_type": eventType})
 
-			if handler, ok := eventHandlers[ghEventHeader]; ok {
-				handler(request, client, logger)
+			if handler, ok := eventHandlers[eventType]; ok {
+				handler(body, client, logger)
 			} else {
-				logger.Warn("unhandled event type", slog.String("event_type", ghEventHeader))
+				logger.Warn("unhandled event type", slog.String("event_type", eventType))
 			}
 		})
 	}
 
-	// Return a function to handle events directly (for CI mode)
 	return func(eventType string, payload []byte) {
 		if handler, ok := eventHandlers[eventType]; ok {
 			handler(payload, client, logger)
@@ -58,56 +56,54 @@ func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Lo
 func handleIssueCommentEvent(request []byte, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
 	var event github.IssueCommentEvent
 	if err := json.Unmarshal(request, &event); err != nil {
-		logger.Error("failed to unmarshal event payload", slog.String("error", err.Error()))
+		logger.Error("failed to unmarshal issue_comment payload", slog.String("error", err.Error()))
 		return
 	}
-	// Handle the issue comment event
-	comment := *event.Comment.Body
-	logger.Info("handling issue comment event", slog.String("comment", comment))
+	logger.Info("handling issue comment event", slog.String("comment", event.GetComment().GetBody()))
 	processComment(&event, client, logger)
 }
 
 func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.Logger) {
 	var event github.PullRequestEvent
 	if err := json.Unmarshal(request, &event); err != nil {
-		logger.Error("failed to unmarshal event payload", slog.String("error", err.Error()))
+		logger.Error("failed to unmarshal pull_request payload", slog.String("error", err.Error()))
 		return
 	}
-	// Handle the pull request event
-	logger.Info("handling pull request event", slog.String("action", *event.Action))
 
-	if *event.Action == "opened" || *event.Action == "reopened" {
-		ctx := context.Background()
-		owner := event.GetRepo().GetOwner().GetLogin()
-		repo := event.GetRepo().GetName()
-		prNumber := *event.PullRequest.Number
+	action := event.GetAction()
+	logger.Info("handling pull request event", slog.String("action", action))
 
-		// Add the "do-not-merge" label to the pull request
-		_, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"do-not-merge"})
-		if err != nil {
-			logger.Error("failed to add do-not-merge label", slog.String("error", err.Error()))
-			return
+	if action != "opened" && action != "reopened" {
+		return
+	}
+
+	ctx := context.Background()
+	owner := event.GetRepo().GetOwner().GetLogin()
+	repo := event.GetRepo().GetName()
+	prNumber := event.GetPullRequest().GetNumber()
+
+	if _, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"do-not-merge"}); err != nil {
+		logger.Error("failed to add do-not-merge label", slog.String("error", err.Error()))
+		return
+	}
+	logger.Info("added do-not-merge label")
+
+	if action == "reopened" {
+		if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
+			logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
 		}
-		logger.Info("added do-not-merge label")
-
-		if *event.Action == "reopened" {
-			if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
-				logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
-			}
-			if err := pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger); err != nil {
-				logger.Error("failed to add comment", slog.String("error", err.Error()))
-			}
+		if err := pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger); err != nil {
+			logger.Error("failed to add comment", slog.String("error", err.Error()))
 		}
+	}
 
-		// Get PR SHA
-		sha, err := pullrequest.GetPRSHA(owner, repo, prNumber, client, logger)
-		if err != nil {
-			logger.Error("failed to get PR SHA", slog.String("error", err.Error()))
-		}
+	sha, err := pullrequest.GetPRSHA(owner, repo, prNumber, client, logger)
+	if err != nil {
+		logger.Error("failed to get PR SHA", slog.String("error", err.Error()))
+		return
+	}
 
-		_, err = checkrun.CreateCheckRun(owner, repo, sha, "neutral", "Approval needed", client, logger)
-		if err != nil {
-			logger.Error("failed to create check run", slog.String("error", err.Error()))
-		}
+	if _, err := checkrun.CreateCheckRun(owner, repo, sha, "neutral", "Approval needed", client, logger); err != nil {
+		logger.Error("failed to create check run", slog.String("error", err.Error()))
 	}
 }

@@ -2,203 +2,117 @@ package githubapi
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"log/slog"
-	"reflect"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-github/v71/github"
+	"github.com/migueleliasweb/go-github-mock/src/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNewGithubClient(t *testing.T) {
-	type args struct {
-		logger *slog.Logger
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *ProwLiteGitHubClient
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewGithubClient(tt.args.logger)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewGithubClient() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewGithubClient() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func generateRSAKey(t *testing.T) []byte {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	})
+}
+
+func writeProwConfig(t *testing.T, keyPath string) {
+	t.Helper()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".github"), 0o755))
+	cfg := "github:\n  app_id: 1\n  installation_id: 1\n  private_key_path: " + keyPath + "\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(cfg), 0o644))
+	t.Chdir(dir)
+}
+
+func TestLoadPrivateKey_EnvVar(t *testing.T) {
+	t.Setenv("PROW_GITHUB_PRIVATE_KEY", "key-content")
+	got, err := loadPrivateKey("")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("key-content"), got)
+}
+
+func TestLoadPrivateKey_File(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "key*.pem")
+	require.NoError(t, err)
+	_, err = f.WriteString("file-key")
+	require.NoError(t, err)
+	f.Close()
+
+	got, err := loadPrivateKey(f.Name())
+	require.NoError(t, err)
+	assert.Equal(t, []byte("file-key"), got)
+}
+
+func TestLoadPrivateKey_NoConfig(t *testing.T) {
+	t.Setenv("PROW_GITHUB_PRIVATE_KEY", "")
+	_, err := loadPrivateKey("")
+	assert.Error(t, err)
+}
+
+func TestNewGithubClient_Success(t *testing.T) {
+	keyPEM := generateRSAKey(t)
+	keyFile := filepath.Join(t.TempDir(), "key.pem")
+	require.NoError(t, os.WriteFile(keyFile, keyPEM, 0o600))
+	writeProwConfig(t, keyFile)
+
+	client, err := NewGithubClient(slog.Default())
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestNewGithubClient_NoConfig(t *testing.T) {
+	t.Chdir(t.TempDir())
+	_, err := NewGithubClient(slog.Default())
+	assert.Error(t, err)
+}
+
+func TestNewGithubClient_NoPrivateKey(t *testing.T) {
+	// Config exists but no private_key_path and no env var → loadPrivateKey errors.
+	t.Setenv("PROW_GITHUB_PRIVATE_KEY", "")
+	writeProwConfig(t, "") // empty private_key_path
+	_, err := NewGithubClient(slog.Default())
+	assert.Error(t, err)
+}
+
+func TestNewGithubClient_BadKey(t *testing.T) {
+	keyFile := filepath.Join(t.TempDir(), "key.pem")
+	require.NoError(t, os.WriteFile(keyFile, []byte("not-a-valid-key"), 0o600))
+	writeProwConfig(t, keyFile)
+
+	_, err := NewGithubClient(slog.Default())
+	assert.Error(t, err)
 }
 
 func TestProwLiteGitHubClient_GetClient(t *testing.T) {
-	type args struct {
-		logger *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-		want *github.Client
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.g.GetClient(tt.args.logger); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ProwLiteGitHubClient.GetClient() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	inner := github.NewClient(nil)
+	c := &ProwLiteGitHubClient{client: inner}
+	assert.Equal(t, inner, c.GetClient())
 }
 
 func TestProwLiteGitHubClient_CreateCheckRun(t *testing.T) {
-	type args struct {
-		ctx   context.Context
-		owner string
-		repo  string
-		opt   github.CreateCheckRunOptions
-	}
-	tests := []struct {
-		name    string
-		g       *ProwLiteGitHubClient
-		args    args
-		want    *github.CheckRun
-		want1   *github.Response
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := tt.g.CreateCheckRun(tt.args.ctx, tt.args.owner, tt.args.repo, tt.args.opt)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ProwLiteGitHubClient.CreateCheckRun() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ProwLiteGitHubClient.CreateCheckRun() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("ProwLiteGitHubClient.CreateCheckRun() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func TestProwLiteGitHubClient_GetPRSHA(t *testing.T) {
-	type args struct {
-		owner    string
-		repo     string
-		prNumber int
-		logger   *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.g.GetPRSHA(tt.args.owner, tt.args.repo, tt.args.prNumber, tt.args.logger); got != tt.want {
-				t.Errorf("ProwLiteGitHubClient.GetPRSHA() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestProwLiteGitHubClient_RemoveLabel(t *testing.T) {
-	type args struct {
-		owner    string
-		repo     string
-		prNumber int
-		label    string
-		logger   *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.g.RemoveLabel(tt.args.owner, tt.args.repo, tt.args.prNumber, tt.args.label, tt.args.logger)
-		})
-	}
-}
-
-func TestProwLiteGitHubClient_AddComment(t *testing.T) {
-	type args struct {
-		owner       string
-		repo        string
-		prNumber    int
-		commentText string
-		logger      *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.g.AddComment(tt.args.owner, tt.args.repo, tt.args.prNumber, tt.args.commentText, tt.args.logger)
-		})
-	}
-}
-
-func TestProwLiteGitHubClient_CreateLabel(t *testing.T) {
-	type args struct {
-		owner       string
-		repo        string
-		name        string
-		color       string
-		description string
-		logger      *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.g.CreateLabel(tt.args.owner, tt.args.repo, tt.args.name, tt.args.color, tt.args.description, tt.args.logger)
-		})
-	}
-}
-
-func TestProwLiteGitHubClient_AddLabelsToIssue(t *testing.T) {
-	type args struct {
-		owner    string
-		repo     string
-		prNumber int
-		labels   []string
-		logger   *slog.Logger
-	}
-	tests := []struct {
-		name string
-		g    *ProwLiteGitHubClient
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.g.AddLabelsToIssue(tt.args.owner, tt.args.repo, tt.args.prNumber, tt.args.labels, tt.args.logger)
-		})
-	}
+	mockClient := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(
+			mock.PostReposCheckRunsByOwnerByRepo,
+			github.CheckRun{ID: github.Ptr(int64(1))},
+		),
+	))
+	c := &ProwLiteGitHubClient{client: mockClient}
+	cr, _, err := c.CreateCheckRun(context.Background(), "owner", "repo", github.CreateCheckRunOptions{
+		Name:    "test",
+		HeadSHA: "abc123",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), cr.GetID())
 }
