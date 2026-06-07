@@ -8,3 +8,7 @@ tasks:
     desc: Run the development server
     cmds:
       - air
+  gen:
+    desc: Generate plugin and command documentation under docs/plugins/
+    cmds:
+      - go run ./cmd/docgen
