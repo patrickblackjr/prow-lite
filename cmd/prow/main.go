@@ -138,7 +138,7 @@ func runAction(ctx context.Context, mode, plugin, event string, client *github.C
 
 func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 	r := gin.New()
-	r.SetTrustedProxies(nil) //nolint:errcheck — nil arg never errors
+	_ = r.SetTrustedProxies(nil)
 	r.Use(sloggin.New(logger))
 	r.Use(gin.Recovery())
 

@@ -48,7 +48,7 @@ func TestLoadPrivateKey_File(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.WriteString("file-key")
 	require.NoError(t, err)
-	f.Close()
+	_ = f.Close()
 
 	got, err := loadPrivateKey(f.Name())
 	require.NoError(t, err)

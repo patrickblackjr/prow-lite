@@ -549,7 +549,7 @@ func TestPruneRepo_MultiPage(t *testing.T) {
 						`<https://api.github.com/repos/owner/repo/labels?page=2>; rel="next"`)
 				}
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`[{"name":"keep"}]`))
+				_, _ = w.Write([]byte(`[{"name":"keep"}]`))
 			}),
 		),
 	))
