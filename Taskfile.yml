@@ -12,3 +12,8 @@ tasks:
     desc: Generate plugin and command documentation under docs/plugins/
     cmds:
       - go run ./cmd/docgen
+  lint-docs:
+    desc: Fail if generated docs are out of date (run 'task gen' to fix)
+    cmds:
+      - go run ./cmd/docgen
+      - git diff --exit-code docs/
