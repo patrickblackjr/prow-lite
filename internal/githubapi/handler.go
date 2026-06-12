@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
-	"github.com/patrickblackjr/prow-lite/internal/config"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/checkrun"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
@@ -65,16 +64,6 @@ func NewPREventHandler(minApprovals int) func(*github.PullRequestEvent, *github.
 	return func(event *github.PullRequestEvent, client *github.Client, logger *slog.Logger) {
 		handlePullRequestEvent(event, client, logger, minApprovals)
 	}
-}
-
-// NewPREventHandlerFromConfig reads min_approvals from the repository's config file and returns
-// a configured pull_request event handler. Defaults to 1 approval if config is missing or invalid.
-func NewPREventHandlerFromConfig(logger *slog.Logger) func(*github.PullRequestEvent, *github.Client, *slog.Logger) {
-	minApprovals := 1
-	if cfg, err := config.GetProwLiteConfig(logger); err == nil && cfg.Features.LGTM.MinApprovals != nil {
-		minApprovals = *cfg.Features.LGTM.MinApprovals
-	}
-	return NewPREventHandler(minApprovals)
 }
 
 func handleIssueCommentEvent(request []byte, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {

@@ -237,6 +237,54 @@ func TestHandlePullRequestEvent_ZeroMinApprovals_Opened(t *testing.T) {
 	handlePullRequestEvent(prEvent("opened"), c, discardLogger(), 0)
 }
 
+func TestHandlePullRequestEvent_ZeroMinApprovals_RemoveLabelFails(t *testing.T) {
+	// WithRequestMatch can't queue two calls for the same endpoint — use a stateful handler.
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`[]`))
+			}),
+		),
+		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{Head: &github.PullRequestBranch{SHA: github.Ptr("sha1")}}),
+		// do-not-merge remove fails — warns but continues
+		mock.WithRequestMatchHandler(
+			mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo,
+			github.CheckRun{ID: github.Ptr(int64(1))}),
+	))
+	handlePullRequestEvent(prEvent("opened"), c, discardLogger(), 0)
+}
+
+func TestHandlePullRequestEvent_ZeroMinApprovals_CreateCheckRunFails(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`[]`))
+			}),
+		),
+		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{Head: &github.PullRequestBranch{SHA: github.Ptr("sha1")}}),
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+		mock.WithRequestMatchHandler(
+			mock.PostReposCheckRunsByOwnerByRepo,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	handlePullRequestEvent(prEvent("opened"), c, discardLogger(), 0)
+}
+
+
 func TestHandlePullRequestEvent_ZeroMinApprovals_Reopened(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),

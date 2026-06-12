@@ -93,3 +93,15 @@ func TestGetLabelCategories_FileNotFound(t *testing.T) {
 	_, err := GetLabelCategories(slog.Default())
 	assert.Error(t, err)
 }
+
+func TestGetLabelCategories_InvalidYAML(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".github"), 0o755))
+	labelsPath := filepath.Join(dir, "labels.yml")
+	require.NoError(t, os.WriteFile(labelsPath, []byte("{invalid: ["), 0o644))
+	prowCfg := "features:\n  label_sync:\n    path: " + labelsPath + "\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
+	t.Chdir(dir)
+	_, err := GetLabelCategories(slog.Default())
+	assert.Error(t, err)
+}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
+	eventplugin "github.com/patrickblackjr/prow-lite/cmd/event"
 	"github.com/patrickblackjr/prow-lite/cmd/labelsync"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/patrickblackjr/prow-lite/internal/logging"
@@ -79,8 +80,8 @@ func main() {
 }
 
 func runAction(ctx context.Context, mode, plugin, event string, client *github.Client, logger *slog.Logger) {
-	processComment := githubapi.NewProcessCommentFromConfig(logger)
-	handlePR := githubapi.NewPREventHandlerFromConfig(logger)
+	processComment := eventplugin.NewProcessComment(logger)
+	handlePR := eventplugin.NewPREventHandler(logger)
 
 	switch mode {
 	case "standalone":

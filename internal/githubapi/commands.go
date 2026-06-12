@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v71/github"
-	"github.com/patrickblackjr/prow-lite/internal/config"
 )
 
 // CommandDef describes a slash command handled by the event plugin.
@@ -235,16 +234,4 @@ func NewProcessComment(minApprovals int, categories map[string][]string) func(*g
 // ProcessComment dispatches slash commands with a default of 1 required approval and no category commands.
 func ProcessComment(event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
 	NewProcessComment(1, nil)(event, client, logger)
-}
-
-// NewProcessCommentFromConfig loads min_approvals and label categories from the repository's
-// config files and returns a configured ProcessComment function. Config errors are non-fatal;
-// defaults are used when config is missing or invalid.
-func NewProcessCommentFromConfig(logger *slog.Logger) func(*github.IssueCommentEvent, *github.Client, *slog.Logger) {
-	minApprovals := 1
-	if cfg, err := config.GetProwLiteConfig(logger); err == nil && cfg.Features.LGTM.MinApprovals != nil {
-		minApprovals = *cfg.Features.LGTM.MinApprovals
-	}
-	categories, _ := config.GetLabelCategories(logger)
-	return NewProcessComment(minApprovals, categories)
 }

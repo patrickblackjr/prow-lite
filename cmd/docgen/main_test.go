@@ -26,6 +26,17 @@ func TestRender_PanicsOnBadPath(t *testing.T) {
 	})
 }
 
+func TestMain_PanicsWhenDocsDirBlocked(t *testing.T) {
+	dir := t.TempDir()
+	// Place a regular file named "docs" so os.MkdirAll("docs/plugins") cannot create the directory.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs"), []byte("blocked"), 0o644))
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+	require.NoError(t, os.Chdir(dir))
+	assert.Panics(t, func() { main() })
+}
+
 func TestRender_PanicsOnTemplateExecutionError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.md")
 	assert.Panics(t, func() {

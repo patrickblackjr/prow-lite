@@ -2,6 +2,7 @@ package githubapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -311,6 +312,21 @@ func TestLgtm_ZeroMinApprovals(t *testing.T) {
 	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 0)
 }
 
+// TestLgtm_UpdateCheckRunFails_BelowMinApprovals verifies the error path when updateApprovalCheckRun
+// fails after recording an approval that does not yet meet the required count.
+func TestLgtm_UpdateCheckRunFails_BelowMinApprovals(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
+		mock.WithRequestMatchHandler(
+			mock.GetReposPullsByOwnerByRepoByPullNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 2)
+}
+
 // TestLgtm_MinApprovalsNotMet verifies that when minApprovals > current count, the check run
 // stays neutral and labels are not added.
 func TestLgtm_MinApprovalsNotMet(t *testing.T) {
@@ -323,6 +339,26 @@ func TestLgtm_MinApprovalsNotMet(t *testing.T) {
 		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
 	))
 	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 2)
+}
+
+// TestUnlgtm_UpdateCheckRunFails_StillApproved verifies the error path when updateApprovalCheckRun
+// fails after a revocation that still leaves enough approvals.
+func TestUnlgtm_UpdateCheckRunFails_StillApproved(t *testing.T) {
+	twoApprovalComments := []*github.IssueComment{
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("alice")}},
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("bob")}},
+		{Body: github.Ptr("/unlgtm"), User: &github.User{Login: github.Ptr("alice")}},
+	}
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, twoApprovalComments),
+		mock.WithRequestMatchHandler(
+			mock.GetReposPullsByOwnerByRepoByPullNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
 }
 
 // TestUnlgtm_StillApprovedByOthers verifies that when enough approvals remain after one is revoked,
@@ -374,6 +410,37 @@ func TestCountApprovals_ResetOnReopen(t *testing.T) {
 	count, err := countApprovals(context.Background(), c, "owner", "repo", 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, count) // alice and bob cleared by reset; only charlie counts
+}
+
+// TestCountApprovals_Pagination verifies that multi-page comment responses are fully consumed.
+func TestCountApprovals_Pagination(t *testing.T) {
+	page := 0
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				page++
+				w.Header().Set("Content-Type", "application/json")
+				if page == 1 {
+					w.Header().Set("Link", `<https://api.github.com/repos/owner/repo/issues/1/comments?page=2>; rel="next"`)
+				}
+				var comments []*github.IssueComment
+				if page == 1 {
+					comments = []*github.IssueComment{
+						{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("alice")}},
+					}
+				} else {
+					comments = []*github.IssueComment{
+						{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("bob")}},
+					}
+				}
+				_ = json.NewEncoder(w).Encode(comments)
+			}),
+		),
+	))
+	count, err := countApprovals(context.Background(), c, "owner", "repo", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
 }
 
 // TestCountApprovals_ListFails verifies that API errors are shown.
