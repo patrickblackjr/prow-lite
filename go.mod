@@ -3,7 +3,7 @@ module github.com/patrickblackjr/prow-lite
 go 1.25.5
 
 require (
-	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
+	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/go-github/v71 v71.0.0
 	github.com/lmittmann/tint v1.1.3
@@ -32,6 +32,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/go-github/v73 v73.0.0 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
+	github.com/google/go-github/v88 v88.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
