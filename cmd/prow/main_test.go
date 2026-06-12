@@ -26,6 +26,22 @@ func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
+type stubGitHubClient struct{ c *github.Client }
+
+func (s *stubGitHubClient) GetClient() *github.Client { return s.c }
+func (s *stubGitHubClient) CreateCheckRun(_ context.Context, _, _ string, _ github.CreateCheckRunOptions) (*github.CheckRun, *github.Response, error) {
+	return nil, nil, nil
+}
+
+func stubClientFactory(t *testing.T) {
+	t.Helper()
+	orig := newGithubClient
+	newGithubClient = func(_ *slog.Logger) (githubapi.ProwGitHubClient, error) {
+		return &stubGitHubClient{c: github.NewClient(mock.NewMockedHTTPClient())}, nil
+	}
+	t.Cleanup(func() { newGithubClient = orig })
+}
+
 func captureExit(t *testing.T) *int {
 	t.Helper()
 	code := -1
@@ -187,4 +203,23 @@ func TestRunAction_CI_Event_ZeroMinApprovals(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
 	t.Chdir(dir)
 	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "issue_comment", github.NewClient(nil), discardLogger())
+}
+
+func TestMain_ActionSuccess_WithEventTypeFlag(t *testing.T) {
+	stubClientFactory(t)
+	t.Chdir(t.TempDir())
+	oldArgs := os.Args
+	os.Args = []string{"prow", "run", "--mode", "ci", "--plugin", "event", "--event-type", "issue_comment", "--event", `{"action":"created"}`}
+	t.Cleanup(func() { os.Args = oldArgs })
+	main()
+}
+
+func TestMain_ActionSuccess_WithEnvVar(t *testing.T) {
+	stubClientFactory(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("GITHUB_EVENT_NAME", "issue_comment")
+	oldArgs := os.Args
+	os.Args = []string{"prow", "run", "--mode", "ci", "--plugin", "event", "--event", `{"action":"created"}`}
+	t.Cleanup(func() { os.Args = oldArgs })
+	main()
 }

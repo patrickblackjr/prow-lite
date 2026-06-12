@@ -18,6 +18,9 @@ import (
 
 var osExit = os.Exit
 var runServer = func(r *gin.Engine, addr string) error { return r.Run(addr) }
+var newGithubClient = func(logger *slog.Logger) (githubapi.ProwGitHubClient, error) {
+	return githubapi.NewGithubClient(logger)
+}
 
 func main() {
 	logger := logging.SetupLogging()
@@ -67,7 +70,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					client, err := githubapi.NewGithubClient(logger)
+					client, err := newGithubClient(logger)
 					if err != nil {
 						logger.Error("failed to create GitHub client", slog.String("error", err.Error()))
 						osExit(2)
