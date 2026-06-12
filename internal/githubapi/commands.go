@@ -34,75 +34,76 @@ type commandHandler struct {
 	handler func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger)
 }
 
-// dispatchTable is the single source of truth for slash commands: it drives both
-// runtime dispatch in ProcessComment and doc generation (via Commands) in cmd/docgen.
-var dispatchTable = []commandHandler{
-	{
-		def: CommandDef{
-			Triggers:    []string{"/lgtm", "/approve"},
-			Description: "Approves the pull request. Adds the `lgtm` label, removes `do-not-merge`, and marks the LGTM check run as passed.",
-			Usage:       "/lgtm",
+func buildDispatchTable(minApprovals int) []commandHandler {
+	return []commandHandler{
+		{
+			def: CommandDef{
+				Triggers:    []string{"/lgtm", "/approve"},
+				Description: "Approves the pull request. Adds the `lgtm` label, removes `do-not-merge`, and marks the LGTM check run as passed.",
+				Usage:       "/lgtm",
+			},
+			handler: func(_ string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				lgtm(event, client, logger, minApprovals)
+			},
 		},
-		handler: func(_ string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			lgtm(event, client, logger)
+		{
+			def: CommandDef{
+				Triggers:    []string{"/remove-lgtm", "/remove-approve", "/remove-approval", "/unapprove", "/unlgtm"},
+				Description: "Revokes approval of the pull request. Removes the `lgtm` label, adds `do-not-merge`, and resets the LGTM check run to neutral.",
+				Usage:       "/remove-lgtm",
+			},
+			handler: func(_ string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				unlgtm(event, client, logger, minApprovals)
+			},
 		},
-	},
-	{
-		def: CommandDef{
-			Triggers:    []string{"/remove-lgtm", "/remove-approve", "/remove-approval", "/unapprove", "/unlgtm"},
-			Description: "Revokes approval of the pull request. Removes the `lgtm` label, adds `do-not-merge`, and resets the LGTM check run to neutral.",
-			Usage:       "/remove-lgtm",
+		{
+			def: CommandDef{
+				Triggers:    []string{"/assign"},
+				Description: "Assigns up to 3 users to the pull request. The `@` prefix on usernames is optional.",
+				Usage:       "/assign @user1 [@user2] [@user3]",
+			},
+			handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				assignUsers(command, event, client, logger)
+			},
 		},
-		handler: func(_ string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			unlgtm(event, client, logger)
+		{
+			def: CommandDef{
+				Triggers:    []string{"/unassign"},
+				Description: "Removes up to 3 users from pull request assignees. The `@` prefix on usernames is optional.",
+				Usage:       "/unassign @user1 [@user2] [@user3]",
+			},
+			handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				unassignUsers(command, event, client, logger)
+			},
 		},
-	},
-	{
-		def: CommandDef{
-			Triggers:    []string{"/assign"},
-			Description: "Assigns up to 3 users to the pull request. The `@` prefix on usernames is optional.",
-			Usage:       "/assign @user1 [@user2] [@user3]",
+		{
+			def: CommandDef{
+				Triggers:    []string{"/label"},
+				Description: "Adds an arbitrary label to the pull request.",
+				Usage:       "/label <label-name>",
+			},
+			handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				label(command, event, client, logger)
+			},
 		},
-		handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			assignUsers(command, event, client, logger)
+		{
+			def: CommandDef{
+				Triggers:    []string{"/remove-label"},
+				Description: "Removes an arbitrary label from the pull request.",
+				Usage:       "/remove-label <label-name>",
+			},
+			handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+				removeLabel(command, event, client, logger)
+			},
 		},
-	},
-	{
-		def: CommandDef{
-			Triggers:    []string{"/unassign"},
-			Description: "Removes up to 3 users from pull request assignees. The `@` prefix on usernames is optional.",
-			Usage:       "/unassign @user1 [@user2] [@user3]",
-		},
-		handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			unassignUsers(command, event, client, logger)
-		},
-	},
-	{
-		def: CommandDef{
-			Triggers:    []string{"/label"},
-			Description: "Adds an arbitrary label to the pull request.",
-			Usage:       "/label <label-name>",
-		},
-		handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			label(command, event, client, logger)
-		},
-	},
-	{
-		def: CommandDef{
-			Triggers:    []string{"/remove-label"},
-			Description: "Removes an arbitrary label from the pull request.",
-			Usage:       "/remove-label <label-name>",
-		},
-		handler: func(command string, event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-			removeLabel(command, event, client, logger)
-		},
-	},
+	}
 }
 
 // Commands exposes the command definitions for doc generation.
 var Commands = func() []CommandDef {
-	defs := make([]CommandDef, len(dispatchTable))
-	for i, ch := range dispatchTable {
+	table := buildDispatchTable(1)
+	defs := make([]CommandDef, len(table))
+	for i, ch := range table {
 		defs[i] = ch.def
 	}
 	return defs
@@ -126,16 +127,25 @@ var EventPluginLabels = []LabelDef{
 	{Name: "do-not-merge", Meaning: "PR is not ready to merge."},
 }
 
-func ProcessComment(event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
-	lines := strings.Split(event.GetComment().GetBody(), "\n")
-	for _, line := range lines {
-		for _, ch := range dispatchTable {
-			for _, trigger := range ch.def.Triggers {
-				if strings.HasPrefix(line, trigger) {
-					ch.handler(line, event, client, logger)
-					break
+// NewProcessComment returns a ProcessComment function configured with the given minimum approvals.
+func NewProcessComment(minApprovals int) func(*github.IssueCommentEvent, *github.Client, *slog.Logger) {
+	table := buildDispatchTable(minApprovals)
+	return func(event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+		lines := strings.Split(event.GetComment().GetBody(), "\n")
+		for _, line := range lines {
+			for _, ch := range table {
+				for _, trigger := range ch.def.Triggers {
+					if strings.HasPrefix(line, trigger) {
+						ch.handler(line, event, client, logger)
+						break
+					}
 				}
 			}
 		}
 	}
+}
+
+// ProcessComment dispatches slash commands with a default of 1 required approval.
+func ProcessComment(event *github.IssueCommentEvent, client *github.Client, logger *slog.Logger) {
+	NewProcessComment(1)(event, client, logger)
 }

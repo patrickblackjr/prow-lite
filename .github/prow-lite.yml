@@ -5,3 +5,5 @@ github:
 features:
   label_sync:
     path: .github/labels.yml
+  lgtm:
+    min_approvals: 0

@@ -10,8 +10,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// oneApprovalComments returns a mock comment list representing one approval from a commenter.
+func oneApprovalComments() []*github.IssueComment {
+	return []*github.IssueComment{
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("commenter")}},
+	}
+}
+
+// noApprovalComments returns a mock comment list with no approvals.
+func noApprovalComments() []*github.IssueComment {
+	return []*github.IssueComment{
+		{Body: github.Ptr("/unlgtm"), User: &github.User{Login: github.Ptr("commenter")}},
+	}
+}
+
 func TestProcessComment_Lgtm(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -24,6 +39,7 @@ func TestProcessComment_Lgtm(t *testing.T) {
 
 func TestProcessComment_Approve(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -36,6 +52,7 @@ func TestProcessComment_Approve(t *testing.T) {
 
 func TestProcessComment_Unlgtm(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -48,6 +65,7 @@ func TestProcessComment_Unlgtm(t *testing.T) {
 
 func TestProcessComment_RemoveApprove(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -60,6 +78,7 @@ func TestProcessComment_RemoveApprove(t *testing.T) {
 
 func TestProcessComment_RemoveApproval(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -72,6 +91,7 @@ func TestProcessComment_RemoveApproval(t *testing.T) {
 
 func TestProcessComment_Unapprove(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -84,6 +104,7 @@ func TestProcessComment_Unapprove(t *testing.T) {
 
 func TestProcessComment_RemoveLgtm(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
@@ -96,6 +117,7 @@ func TestProcessComment_RemoveLgtm(t *testing.T) {
 
 func TestLgtm_AddLabelsFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
 		mock.WithRequestMatchHandler(
 			mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber,
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -103,11 +125,12 @@ func TestLgtm_AddLabelsFails(t *testing.T) {
 			}),
 		),
 	))
-	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger())
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 1)
 }
 
 func TestLgtm_RemoveLabelFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatchHandler(
 			mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName,
@@ -120,11 +143,12 @@ func TestLgtm_RemoveLabelFails(t *testing.T) {
 		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
 		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
 	))
-	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger())
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 1)
 }
 
 func TestLgtm_UpdateCheckRunFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatchHandler(
@@ -134,11 +158,24 @@ func TestLgtm_UpdateCheckRunFails(t *testing.T) {
 			}),
 		),
 	))
-	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger())
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 1)
+}
+
+func TestLgtm_CountApprovalsFails(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 1)
 }
 
 func TestUnlgtm_RemoveLabelFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatchHandler(
 			mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName,
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -151,11 +188,12 @@ func TestUnlgtm_RemoveLabelFails(t *testing.T) {
 		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
 		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
 	))
-	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger())
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
 }
 
 func TestUnlgtm_AddLabelFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatchHandler(
 			mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber,
@@ -168,11 +206,12 @@ func TestUnlgtm_AddLabelFails(t *testing.T) {
 		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
 		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
 	))
-	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger())
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
 }
 
 func TestUnlgtm_UpdateCheckRunFails(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, noApprovalComments()),
 		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
 		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
 		mock.WithRequestMatchHandler(
@@ -182,7 +221,19 @@ func TestUnlgtm_UpdateCheckRunFails(t *testing.T) {
 			}),
 		),
 	))
-	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger())
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
+}
+
+func TestUnlgtm_CountApprovalsFails(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
 }
 
 func TestUpdateApprovalCheckRun_Success(t *testing.T) {
@@ -244,4 +295,98 @@ func TestUpdateApprovalCheckRun_UpdateCheckRunFailure(t *testing.T) {
 	err := updateApprovalCheckRun(context.Background(), c, "owner", "repo", 1, "success", "Approved", "The PR is approved.")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "update check run")
+}
+
+// TestLgtm_ZeroMinApprovals verifies that min_approvals=0 auto-approves without counting comments.
+func TestLgtm_ZeroMinApprovals(t *testing.T) {
+	// No comment-list mock — countApprovals must not be called when minApprovals=0.
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{Head: &github.PullRequestBranch{SHA: github.Ptr("sha1")}}),
+		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
+		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
+	))
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 0)
+}
+
+// TestLgtm_MinApprovalsNotMet verifies that when minApprovals > current count, the check run
+// stays neutral and labels are not added.
+func TestLgtm_MinApprovalsNotMet(t *testing.T) {
+	// Only 1 approval, but 2 required — expect neutral check run, no label changes
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, oneApprovalComments()),
+		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{Head: &github.PullRequestBranch{SHA: github.Ptr("sha1")}}),
+		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
+		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
+	))
+	lgtm(makeIssueCommentEvent("owner", "repo", 1, "/lgtm"), c, discardLogger(), 2)
+}
+
+// TestUnlgtm_StillApprovedByOthers verifies that when enough approvals remain after one is revoked,
+// the check run stays successful and labels are not changed.
+func TestUnlgtm_StillApprovedByOthers(t *testing.T) {
+	// Two users approved and one revokes. Make sure count drops to 1, which still meets minApprovals=1
+	twoApprovalComments := []*github.IssueComment{
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("alice")}},
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("bob")}},
+		{Body: github.Ptr("/unlgtm"), User: &github.User{Login: github.Ptr("alice")}},
+	}
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, twoApprovalComments),
+		mock.WithRequestMatch(mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{Head: &github.PullRequestBranch{SHA: github.Ptr("sha1")}}),
+		mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, github.CheckRun{ID: github.Ptr(int64(1))}),
+		mock.WithRequestMatch(mock.PatchReposCheckRunsByOwnerByRepoByCheckRunId, github.CheckRun{ID: github.Ptr(int64(1))}),
+	))
+	unlgtm(makeIssueCommentEvent("owner", "repo", 1, "/unlgtm"), c, discardLogger(), 1)
+}
+
+// TestCountApprovals verifies approval counting logic across multiple users and unlgtm.
+func TestCountApprovals(t *testing.T) {
+	comments := []*github.IssueComment{
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("alice")}},
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("bob")}},
+		{Body: github.Ptr("/unlgtm"), User: &github.User{Login: github.Ptr("alice")}},
+		{Body: github.Ptr("/approve"), User: &github.User{Login: github.Ptr("charlie")}},
+	}
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, comments),
+	))
+	count, err := countApprovals(context.Background(), c, "owner", "repo", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count) // bob and charlie; alice revoked
+}
+
+// TestCountApprovals_ResetOnReopen verifies that approvals posted before a reopen reset are not counted.
+func TestCountApprovals_ResetOnReopen(t *testing.T) {
+	comments := []*github.IssueComment{
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("alice")}},
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("bob")}},
+		{Body: github.Ptr(ApprovalResetComment), User: &github.User{Login: github.Ptr("bot")}},
+		{Body: github.Ptr("/lgtm"), User: &github.User{Login: github.Ptr("charlie")}},
+	}
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber, comments),
+	))
+	count, err := countApprovals(context.Background(), c, "owner", "repo", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count) // alice and bob cleared by reset; only charlie counts
+}
+
+// TestCountApprovals_ListFails verifies that API errors are shown.
+func TestCountApprovals_ListFails(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatchHandler(
+			mock.GetReposIssuesCommentsByOwnerByRepoByIssueNumber,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mock.WriteError(w, http.StatusInternalServerError, "boom")
+			}),
+		),
+	))
+	_, err := countApprovals(context.Background(), c, "owner", "repo", 1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "list comments")
 }

@@ -18,6 +18,9 @@ type ProwLiteConfig struct {
 		LabelSync struct {
 			Path string `yaml:"path"`
 		} `yaml:"label_sync"`
+		LGTM struct {
+			MinApprovals *int `yaml:"min_approvals"`
+		} `yaml:"lgtm"`
 	} `yaml:"features"`
 }
 
