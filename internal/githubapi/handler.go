@@ -89,7 +89,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Clien
 	action := event.GetAction()
 	logger.Info("handling pull request event", slog.String("action", action))
 
-	if action != "opened" && action != "reopened" {
+	if action != "opened" && action != "reopened" && action != "synchronize" {
 		return
 	}
 
@@ -121,7 +121,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Clien
 	}
 	logger.Info("added do-not-merge label")
 
-	if action == "reopened" {
+	if action == "reopened" || action == "synchronize" {
 		if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
 			logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
 		}
