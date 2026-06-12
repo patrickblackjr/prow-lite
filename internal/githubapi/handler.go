@@ -13,13 +13,19 @@ import (
 	"github.com/patrickblackjr/prow-lite/internal/githubapi/pullrequest"
 )
 
-func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) func(string, []byte) {
+func RegisterEventHandlers(
+	r *gin.Engine,
+	client *github.Client,
+	logger *slog.Logger,
+	processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger),
+	handlePR func(*github.PullRequestEvent, *github.Client, *slog.Logger),
+) func(string, []byte) {
 	eventHandlers := map[string]func([]byte, *github.Client, *slog.Logger){
 		"issue_comment": func(request []byte, client *github.Client, logger *slog.Logger) {
 			handleIssueCommentEvent(request, client, logger, processComment)
 		},
 		"pull_request": func(request []byte, client *github.Client, logger *slog.Logger) {
-			handlePullRequestEvent(request, client, logger)
+			dispatchPullRequestEvent(request, client, logger, handlePR)
 		},
 	}
 
@@ -53,6 +59,13 @@ func RegisterEventHandlers(r *gin.Engine, client *github.Client, logger *slog.Lo
 	}
 }
 
+// NewPREventHandler returns a pull_request event handler configured with the given minimum approvals.
+func NewPREventHandler(minApprovals int) func(*github.PullRequestEvent, *github.Client, *slog.Logger) {
+	return func(event *github.PullRequestEvent, client *github.Client, logger *slog.Logger) {
+		handlePullRequestEvent(event, client, logger, minApprovals)
+	}
+}
+
 func handleIssueCommentEvent(request []byte, client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger)) {
 	var event github.IssueCommentEvent
 	if err := json.Unmarshal(request, &event); err != nil {
@@ -63,13 +76,16 @@ func handleIssueCommentEvent(request []byte, client *github.Client, logger *slog
 	processComment(&event, client, logger)
 }
 
-func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.Logger) {
+func dispatchPullRequestEvent(request []byte, client *github.Client, logger *slog.Logger, handlePR func(*github.PullRequestEvent, *github.Client, *slog.Logger)) {
 	var event github.PullRequestEvent
 	if err := json.Unmarshal(request, &event); err != nil {
 		logger.Error("failed to unmarshal pull_request payload", slog.String("error", err.Error()))
 		return
 	}
+	handlePR(&event, client, logger)
+}
 
+func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Client, logger *slog.Logger, minApprovals int) {
 	action := event.GetAction()
 	logger.Info("handling pull request event", slog.String("action", action))
 
@@ -92,7 +108,7 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 		if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
 			logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
 		}
-		if err := pullrequest.AddComment(owner, repo, prNumber, "Approval has been reset since this PR was reopened.", client, logger); err != nil {
+		if err := pullrequest.AddComment(owner, repo, prNumber, ApprovalResetComment, client, logger); err != nil {
 			logger.Error("failed to add comment", slog.String("error", err.Error()))
 		}
 	}
@@ -100,6 +116,20 @@ func handlePullRequestEvent(request []byte, client *github.Client, logger *slog.
 	sha, err := pullrequest.GetPRSHA(owner, repo, prNumber, client, logger)
 	if err != nil {
 		logger.Error("failed to get PR SHA", slog.String("error", err.Error()))
+		return
+	}
+
+	if minApprovals == 0 {
+		if _, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"lgtm"}); err != nil {
+			logger.Error("failed to add lgtm label", slog.String("error", err.Error()))
+			return
+		}
+		if _, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, "do-not-merge"); err != nil {
+			logger.Warn("failed to remove do-not-merge label", slog.String("error", err.Error()))
+		}
+		if _, err := checkrun.CreateCheckRun(owner, repo, sha, "success", "Approved and ready for merge", client, logger); err != nil {
+			logger.Error("failed to create check run", slog.String("error", err.Error()))
+		}
 		return
 	}
 

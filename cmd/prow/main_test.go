@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
+	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,7 +72,7 @@ func TestMain_ActionExitsWithCode2(t *testing.T) {
 
 func TestSetupRouter(t *testing.T) {
 	c := github.NewClient(mock.NewMockedHTTPClient())
-	r := setupRouter(c, discardLogger())
+	r := setupRouter(c, discardLogger(), githubapi.ProcessComment, githubapi.NewPREventHandler(1))
 	require.NotNil(t, r)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -110,6 +111,7 @@ func TestRunAction_CI_Event_NoAction(t *testing.T) {
 }
 
 func TestRunAction_CI_Event_Success(t *testing.T) {
+	t.Chdir(t.TempDir())
 	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
 }
 
@@ -168,4 +170,22 @@ func TestRunAction_CI_UnknownPlugin(t *testing.T) {
 
 func TestRunAction_UnknownMode(t *testing.T) {
 	runAction(context.Background(), "unknown-mode", "", "", github.NewClient(nil), discardLogger())
+}
+
+func TestRunAction_CI_Event_MinApprovals(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".github"), 0o755))
+	prowCfg := "github:\n  app_id: 1\n  installation_id: 1\nfeatures:\n  lgtm:\n    min_approvals: 2\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
+	t.Chdir(dir)
+	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
+}
+
+func TestRunAction_CI_Event_ZeroMinApprovals(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".github"), 0o755))
+	prowCfg := "github:\n  app_id: 1\n  installation_id: 1\nfeatures:\n  lgtm:\n    min_approvals: 0\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
+	t.Chdir(dir)
+	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
 }

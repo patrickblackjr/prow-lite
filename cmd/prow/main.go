@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
 	"github.com/patrickblackjr/prow-lite/cmd/labelsync"
+	"github.com/patrickblackjr/prow-lite/internal/config"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/patrickblackjr/prow-lite/internal/logging"
 	sloggin "github.com/samber/slog-gin"
@@ -79,9 +80,16 @@ func main() {
 }
 
 func runAction(ctx context.Context, mode, plugin, event string, client *github.Client, logger *slog.Logger) {
+	minApprovals := 1
+	if cfg, cfgErr := config.GetProwLiteConfig(logger); cfgErr == nil && cfg.Features.LGTM.MinApprovals != nil {
+		minApprovals = *cfg.Features.LGTM.MinApprovals
+	}
+	processComment := githubapi.NewProcessComment(minApprovals)
+	handlePR := githubapi.NewPREventHandler(minApprovals)
+
 	switch mode {
 	case "standalone":
-		r := setupRouter(client, logger)
+		r := setupRouter(client, logger, processComment, handlePR)
 		logger.Info("server is running", slog.String("port", "8080"))
 		if err := runServer(r, ":8080"); err != nil {
 			logger.Error("failed to run server", slog.String("error", err.Error()))
@@ -107,7 +115,7 @@ func runAction(ctx context.Context, mode, plugin, event string, client *github.C
 				osExit(1)
 				return
 			}
-			handleEvent := githubapi.RegisterEventHandlers(nil, client, logger, githubapi.ProcessComment)
+			handleEvent := githubapi.RegisterEventHandlers(nil, client, logger, processComment, handlePR)
 			handleEvent(eventType, []byte(event))
 
 		case "labelsync", "label-sync":
@@ -136,7 +144,7 @@ func runAction(ctx context.Context, mode, plugin, event string, client *github.C
 	}
 }
 
-func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
+func setupRouter(client *github.Client, logger *slog.Logger, processComment func(*github.IssueCommentEvent, *github.Client, *slog.Logger), handlePR func(*github.PullRequestEvent, *github.Client, *slog.Logger)) *gin.Engine {
 	r := gin.New()
 	_ = r.SetTrustedProxies(nil)
 	r.Use(sloggin.New(logger))
@@ -146,7 +154,7 @@ func setupRouter(client *github.Client, logger *slog.Logger) *gin.Engine {
 		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	githubapi.RegisterEventHandlers(r, client, logger, githubapi.ProcessComment)
+	githubapi.RegisterEventHandlers(r, client, logger, processComment, handlePR)
 
 	return r
 }
