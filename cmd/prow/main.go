@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v71/github"
+	eventplugin "github.com/patrickblackjr/prow-lite/cmd/event"
 	"github.com/patrickblackjr/prow-lite/cmd/labelsync"
-	"github.com/patrickblackjr/prow-lite/internal/config"
 	"github.com/patrickblackjr/prow-lite/internal/githubapi"
 	"github.com/patrickblackjr/prow-lite/internal/logging"
 	sloggin "github.com/samber/slog-gin"
@@ -80,12 +80,8 @@ func main() {
 }
 
 func runAction(ctx context.Context, mode, plugin, event string, client *github.Client, logger *slog.Logger) {
-	minApprovals := 1
-	if cfg, cfgErr := config.GetProwLiteConfig(logger); cfgErr == nil && cfg.Features.LGTM.MinApprovals != nil {
-		minApprovals = *cfg.Features.LGTM.MinApprovals
-	}
-	processComment := githubapi.NewProcessComment(minApprovals)
-	handlePR := githubapi.NewPREventHandler(minApprovals)
+	processComment := eventplugin.NewProcessComment(logger)
+	handlePR := eventplugin.NewPREventHandler(logger)
 
 	switch mode {
 	case "standalone":

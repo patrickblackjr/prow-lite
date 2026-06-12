@@ -7,15 +7,6 @@ import (
 	"github.com/google/go-github/v71/github"
 )
 
-func GetPRSHA(owner, repo string, prNumber int, client *github.Client, logger *slog.Logger) (string, error) {
-	pr, _, err := client.PullRequests.Get(context.Background(), owner, repo, prNumber)
-	if err != nil {
-		logger.Error("failed to get pull request", slog.String("error", err.Error()))
-		return "", err
-	}
-	return pr.GetHead().GetSHA(), nil
-}
-
 func RemoveLabel(owner, repo string, prNumber int, label string, client *github.Client, logger *slog.Logger) error {
 	_, err := client.Issues.RemoveLabelForIssue(context.Background(), owner, repo, prNumber, label)
 	if err != nil {

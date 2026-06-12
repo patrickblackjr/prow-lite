@@ -26,40 +26,73 @@ func TestRender_PanicsOnBadPath(t *testing.T) {
 	})
 }
 
+func TestMain_PanicsWhenDocsDirBlocked(t *testing.T) {
+	dir := t.TempDir()
+	// Place a regular file named "docs" so os.MkdirAll("docs/plugins") cannot create the directory.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs"), []byte("blocked"), 0o644))
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+	require.NoError(t, os.Chdir(dir))
+	assert.Panics(t, func() { main() })
+}
+
 func TestRender_PanicsOnTemplateExecutionError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.md")
 	assert.Panics(t, func() {
-		// join expects a []string.
-		// passing an int causes Execute to return an error.
 		render(path, `{{join . ","}}`, 42)
 	})
 }
 
-func TestLgtmTemplate(t *testing.T) {
+func TestCommandPluginTemplate_LGTM(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "lgtm.md")
-	render(path, lgtmTmpl, map[string]any{
-		"Commands": githubapi.Commands,
-		"PREvents": githubapi.PREvents,
-		"Labels":   githubapi.EventPluginLabels,
-	})
+	render(path, commandPluginTmpl, githubapi.LGTMPlugin)
 
 	got, err := os.ReadFile(path)
 	require.NoError(t, err)
 	content := string(got)
 
 	assert.Contains(t, content, "AUTO-GENERATED")
-	assert.Contains(t, content, "## Slash Commands")
+	assert.Contains(t, content, "## Slash commands")
 	assert.Contains(t, content, "/lgtm")
 	assert.Contains(t, content, "/approve")
-	assert.Contains(t, content, "/assign")
-	assert.Contains(t, content, "/label")
-	assert.Contains(t, content, "/remove-label")
-	assert.Contains(t, content, "## Pull Request Lifecycle Events")
+	assert.Contains(t, content, "## Pull Request lifecycle events")
 	assert.Contains(t, content, "`opened`")
 	assert.Contains(t, content, "`reopened`")
 	assert.Contains(t, content, "## Labels")
 	assert.Contains(t, content, "`lgtm`")
 	assert.Contains(t, content, "`do-not-merge`")
+}
+
+func TestCommandPluginTemplate_Assign(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "assign.md")
+	render(path, commandPluginTmpl, githubapi.AssignPlugin)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(got)
+
+	assert.Contains(t, content, "AUTO-GENERATED")
+	assert.Contains(t, content, "/assign")
+	assert.Contains(t, content, "/unassign")
+	assert.NotContains(t, content, "## Pull Request lifecycle events")
+	assert.NotContains(t, content, "## Labels")
+}
+
+func TestCommandPluginTemplate_Label(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "label.md")
+	render(path, commandPluginTmpl, githubapi.LabelPlugin)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(got)
+
+	assert.Contains(t, content, "AUTO-GENERATED")
+	assert.Contains(t, content, "/label")
+	assert.Contains(t, content, "/unlabel")
+	assert.Contains(t, content, "## Notes")
+	assert.Contains(t, content, "labels.yml")
+	assert.NotContains(t, content, "## Pull Request Lifecycle Events")
 }
 
 func TestLabelsyncTemplate(t *testing.T) {
@@ -71,13 +104,12 @@ func TestLabelsyncTemplate(t *testing.T) {
 	content := string(got)
 
 	assert.Contains(t, content, "AUTO-GENERATED")
-	assert.Contains(t, content, "Label sync Plugin")
+	assert.Contains(t, content, "Label sync plugin")
 	assert.Contains(t, content, "## Configuration")
 	assert.Contains(t, content, "`overwrite`")
 	assert.Contains(t, content, "`prune`")
 	assert.Contains(t, content, "`dry_run`")
 	assert.Contains(t, content, "## Behavior")
-	// Verify numbered list is rendered
 	assert.Contains(t, content, "1.")
 }
 
@@ -89,7 +121,12 @@ func TestMain_CreatesFiles(t *testing.T) {
 	require.NoError(t, os.Chdir(t.TempDir()))
 	main()
 
-	for _, path := range []string{"docs/plugins/lgtm.md", "docs/plugins/labelsync.md"} {
+	for _, path := range []string{
+		"docs/plugins/lgtm.md",
+		"docs/plugins/assign.md",
+		"docs/plugins/label.md",
+		"docs/plugins/labelsync.md",
+	} {
 		content, err := os.ReadFile(path)
 		require.NoError(t, err, "expected %s to be created", path)
 		assert.True(t, strings.Contains(string(content), "AUTO-GENERATED"),

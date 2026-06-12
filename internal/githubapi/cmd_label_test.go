@@ -31,6 +31,55 @@ func TestLabel_Failure(t *testing.T) {
 	label("/label kind/bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
 }
 
+func TestUnlabel_MissingName(t *testing.T) {
+	unlabel("/unlabel", makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
+}
+
+func TestUnlabel_SlashSyntax(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	))
+	unlabel("/unlabel kind/bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestUnlabel_ColonSyntax(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	))
+	unlabel("/unlabel kind:bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestUnlabel_SpaceSyntax(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	))
+	unlabel("/unlabel kind bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestRemoveCategoryLabel_Success(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	))
+	removeCategoryLabel("/unkind bug", "kind", []string{"bug", "feature"}, makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestRemoveCategoryLabel_InvalidLabel(t *testing.T) {
+	removeCategoryLabel("/unkind nope", "kind", []string{"bug"}, makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
+}
+
+func TestRemoveCategoryLabel_MissingLabel(t *testing.T) {
+	removeCategoryLabel("/unkind", "kind", []string{"bug"}, makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
+}
+
+func TestProcessComment_UnlabelCommand(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	))
+	event := makeIssueCommentEvent("owner", "repo", 1, "/unkind bug")
+	categories := map[string][]string{"kind": {"bug", "feature"}}
+	NewProcessComment(1, categories)(event, c, discardLogger())
+}
+
 func TestRemoveLabel_MissingName(t *testing.T) {
 	removeLabel("/remove-label", makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
 }
@@ -52,6 +101,46 @@ func TestRemoveLabel_Failure(t *testing.T) {
 		),
 	))
 	removeLabel("/remove-label kind/bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestLabel_CategoryColonSyntax(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
+	))
+	label("/label kind:bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestLabel_CategorySpaceSyntax(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
+	))
+	label("/label kind bug", makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestApplyCategoryLabel_Success(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
+	))
+	applyCategoryLabel("/kind bug", "kind", []string{"bug", "feature"}, makeIssueCommentEvent("owner", "repo", 1, ""), c, discardLogger())
+}
+
+func TestApplyCategoryLabel_InvalidLabel(t *testing.T) {
+	// Should warn and not call the API (nil client would panic if called)
+	applyCategoryLabel("/kind nope", "kind", []string{"bug", "feature"}, makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
+}
+
+func TestApplyCategoryLabel_MissingLabel(t *testing.T) {
+	// Should warn and not call the API
+	applyCategoryLabel("/kind", "kind", []string{"bug"}, makeIssueCommentEvent("owner", "repo", 1, ""), nil, discardLogger())
+}
+
+func TestProcessComment_CategoryCommand(t *testing.T) {
+	c := github.NewClient(mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, []github.Label{}),
+	))
+	event := makeIssueCommentEvent("owner", "repo", 1, "/kind bug")
+	categories := map[string][]string{"kind": {"bug", "feature"}}
+	NewProcessComment(1, categories)(event, c, discardLogger())
 }
 
 func TestProcessComment_LabelCommands(t *testing.T) {

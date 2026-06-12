@@ -89,7 +89,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Clien
 	action := event.GetAction()
 	logger.Info("handling pull request event", slog.String("action", action))
 
-	if action != "opened" && action != "reopened" {
+	if action != "opened" && action != "reopened" && action != "synchronize" {
 		return
 	}
 
@@ -97,6 +97,23 @@ func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Clien
 	owner := event.GetRepo().GetOwner().GetLogin()
 	repo := event.GetRepo().GetName()
 	prNumber := event.GetPullRequest().GetNumber()
+	sha := event.GetPullRequest().GetHead().GetSHA()
+
+	if minApprovals == 0 {
+		if action == "reopened" {
+			if err := pullrequest.AddComment(owner, repo, prNumber, ApprovalResetComment, client, logger); err != nil {
+				logger.Error("failed to add comment", slog.String("error", err.Error()))
+			}
+		}
+		if _, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"lgtm"}); err != nil {
+			logger.Error("failed to add lgtm label", slog.String("error", err.Error()))
+			return
+		}
+		if _, err := checkrun.CreateCheckRun(owner, repo, sha, "success", "Approved and ready for merge", client, logger); err != nil {
+			logger.Error("failed to create check run", slog.String("error", err.Error()))
+		}
+		return
+	}
 
 	if _, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"do-not-merge"}); err != nil {
 		logger.Error("failed to add do-not-merge label", slog.String("error", err.Error()))
@@ -104,33 +121,13 @@ func handlePullRequestEvent(event *github.PullRequestEvent, client *github.Clien
 	}
 	logger.Info("added do-not-merge label")
 
-	if action == "reopened" {
+	if action == "reopened" || action == "synchronize" {
 		if err := pullrequest.RemoveLabel(owner, repo, prNumber, "lgtm", client, logger); err != nil {
 			logger.Error("failed to remove lgtm label", slog.String("error", err.Error()))
 		}
 		if err := pullrequest.AddComment(owner, repo, prNumber, ApprovalResetComment, client, logger); err != nil {
 			logger.Error("failed to add comment", slog.String("error", err.Error()))
 		}
-	}
-
-	sha, err := pullrequest.GetPRSHA(owner, repo, prNumber, client, logger)
-	if err != nil {
-		logger.Error("failed to get PR SHA", slog.String("error", err.Error()))
-		return
-	}
-
-	if minApprovals == 0 {
-		if _, _, err := client.Issues.AddLabelsToIssue(ctx, owner, repo, prNumber, []string{"lgtm"}); err != nil {
-			logger.Error("failed to add lgtm label", slog.String("error", err.Error()))
-			return
-		}
-		if _, err := client.Issues.RemoveLabelForIssue(ctx, owner, repo, prNumber, "do-not-merge"); err != nil {
-			logger.Warn("failed to remove do-not-merge label", slog.String("error", err.Error()))
-		}
-		if _, err := checkrun.CreateCheckRun(owner, repo, sha, "success", "Approved and ready for merge", client, logger); err != nil {
-			logger.Error("failed to create check run", slog.String("error", err.Error()))
-		}
-		return
 	}
 
 	if _, err := checkrun.CreateCheckRun(owner, repo, sha, "neutral", "Approval needed", client, logger); err != nil {
