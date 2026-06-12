@@ -42,10 +42,10 @@ func TestCommandPluginTemplate_LGTM(t *testing.T) {
 	content := string(got)
 
 	assert.Contains(t, content, "AUTO-GENERATED")
-	assert.Contains(t, content, "## Slash Commands")
+	assert.Contains(t, content, "## Slash commands")
 	assert.Contains(t, content, "/lgtm")
 	assert.Contains(t, content, "/approve")
-	assert.Contains(t, content, "## Pull Request Lifecycle Events")
+	assert.Contains(t, content, "## Pull Request lifecycle events")
 	assert.Contains(t, content, "`opened`")
 	assert.Contains(t, content, "`reopened`")
 	assert.Contains(t, content, "## Labels")
@@ -64,7 +64,7 @@ func TestCommandPluginTemplate_Assign(t *testing.T) {
 	assert.Contains(t, content, "AUTO-GENERATED")
 	assert.Contains(t, content, "/assign")
 	assert.Contains(t, content, "/unassign")
-	assert.NotContains(t, content, "## Pull Request Lifecycle Events")
+	assert.NotContains(t, content, "## Pull Request lifecycle events")
 	assert.NotContains(t, content, "## Labels")
 }
 
