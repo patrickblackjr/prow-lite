@@ -20,16 +20,16 @@ changelog:
   abbrev: 0
   groups: # Regex use RE2 syntax as defined here: https://github.com/google/re2/wiki/Syntax.
     - title: "Breaking changes"
-      regexp: '^.*?(\([[:word:]]+\))??!:.+$'
+      regexp: '^.*?(\([^)]+\))??!:.+$'
       order: 0
     - title: "Features"
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?feat(\([^)]+\))??!?:.+$'
       order: 100
     - title: "Bug fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?fix(\([^)]+\))??!?:.+$'
       order: 200
     - title: "Documentation"
-      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?docs(\([^)]+\))??!?:.+$'
       order: 300
     - title: "Dependency updates"
       regexp: '^.*?(feat|fix|chore)\(deps?.+\)!?:.+$'
@@ -40,5 +40,5 @@ changelog:
   filters:
     exclude:
       - "^test:"
-      - '^.*?Bump(\([[:word:]]+\))?.+$'
-      - '^.*?\[Bot\](\([[:word:]]+\))?.+$'
+      - '^.*?Bump(\([^)]+\))?.+$'
+      - '^.*?\[Bot\](\([^)]+\))?.+$'

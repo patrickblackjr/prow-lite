@@ -4,13 +4,19 @@ on:
   issue_comment:
     types:
       - created
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 env:
   PROW_GITHUB_PRIVATE_KEY: ${{ secrets.PROW_GITHUB_PRIVATE_KEY }}
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
+  checks: write
 
 jobs:
   run:
@@ -36,9 +42,8 @@ jobs:
         env:
           EVENT: ${{ toJson(github.event) }}
         run: |
-          echo "EVENT=$(jq -n --arg event \"$EVENT\" '$event | @json')" >> $GITHUB_ENV
+          echo "EVENT=$(jq -n --arg event "$EVENT" '$event | @json')" >> $GITHUB_ENV
 
       - name: Run Prow Lite
         run: |
-          go version
-          go run cmd/prow/main.go run --mode ci --plugin event --event "$EVENT"
+          go run cmd/prow/main.go run --mode ci --plugin event --event-type "${{ github.event_name }}" --event "$EVENT"
