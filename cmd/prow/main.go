@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,9 +23,10 @@ func main() {
 	logger := logging.SetupLogging()
 
 	var (
-		mode   string
-		plugin string
-		event  string
+		mode      string
+		plugin    string
+		event     string
+		eventType string
 	)
 
 	cmd := &cli.Command{
@@ -59,6 +59,12 @@ func main() {
 						Usage:       "Content of the event to be handled. --plugin flag must be event to use this.",
 						Destination: &event,
 					},
+					&cli.StringFlag{
+						Name:        "event-type",
+						Aliases:     []string{"t"},
+						Usage:       "GitHub event type (e.g. issue_comment, pull_request). Falls back to GITHUB_EVENT_NAME env var.",
+						Destination: &eventType,
+					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 					client, err := githubapi.NewGithubClient(logger)
@@ -67,7 +73,10 @@ func main() {
 						osExit(2)
 						return nil
 					}
-					runAction(ctx, mode, plugin, event, client.GetClient(), logger)
+					if eventType == "" {
+						eventType = os.Getenv("GITHUB_EVENT_NAME")
+					}
+					runAction(ctx, mode, plugin, event, eventType, client.GetClient(), logger)
 					return nil
 				},
 			},
@@ -79,7 +88,7 @@ func main() {
 	}
 }
 
-func runAction(ctx context.Context, mode, plugin, event string, client *github.Client, logger *slog.Logger) {
+func runAction(ctx context.Context, mode, plugin, event, eventType string, client *github.Client, logger *slog.Logger) {
 	processComment := eventplugin.NewProcessComment(logger)
 	handlePR := eventplugin.NewPREventHandler(logger)
 
@@ -99,15 +108,8 @@ func runAction(ctx context.Context, mode, plugin, event string, client *github.C
 				osExit(1)
 				return
 			}
-			var payload map[string]any
-			if err := json.Unmarshal([]byte(event), &payload); err != nil {
-				logger.Error("failed to parse event payload", slog.String("error", err.Error()))
-				osExit(1)
-				return
-			}
-			eventType, ok := payload["action"].(string)
-			if !ok || eventType == "" {
-				logger.Error("failed to determine event type from payload")
+			if eventType == "" {
+				logger.Error("--event-type flag or GITHUB_EVENT_NAME env var is required when --plugin=event")
 				osExit(1)
 				return
 			}

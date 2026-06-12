@@ -83,49 +83,48 @@ func TestSetupRouter(t *testing.T) {
 
 func TestRunAction_Standalone(t *testing.T) {
 	noopServer(t)
-	runAction(context.Background(), "standalone", "", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "standalone", "", "", "", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_Standalone_ServerError(t *testing.T) {
 	runServer = func(r *gin.Engine, addr string) error { return assert.AnError }
 	t.Cleanup(func() { runServer = func(r *gin.Engine, addr string) error { return r.Run(addr) } })
-	runAction(context.Background(), "standalone", "", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "standalone", "", "", "", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_CI_Event_EmptyEvent(t *testing.T) {
 	code := captureExit(t)
-	runAction(context.Background(), "ci", "event", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "event", "", "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
-func TestRunAction_CI_Event_InvalidJSON(t *testing.T) {
+func TestRunAction_CI_Event_MissingEventType(t *testing.T) {
 	code := captureExit(t)
-	runAction(context.Background(), "ci", "event", "not-json", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
-func TestRunAction_CI_Event_NoAction(t *testing.T) {
-	code := captureExit(t)
-	runAction(context.Background(), "ci", "event", `{"foo":"bar"}`, github.NewClient(nil), discardLogger())
-	assert.Equal(t, 1, *code)
+func TestRunAction_CI_Event_UnknownEventType(t *testing.T) {
+	t.Chdir(t.TempDir())
+	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "unknown_event", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_CI_Event_Success(t *testing.T) {
 	t.Chdir(t.TempDir())
-	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "issue_comment", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_CI_LabelSync_NoConfig(t *testing.T) {
 	code := captureExit(t)
 	t.Chdir(t.TempDir())
-	runAction(context.Background(), "ci", "labelsync", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "labelsync", "", "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
 func TestRunAction_CI_LabelDashSync_NoConfig(t *testing.T) {
 	code := captureExit(t)
 	t.Chdir(t.TempDir())
-	runAction(context.Background(), "ci", "label-sync", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "label-sync", "", "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
@@ -139,7 +138,7 @@ func TestRunAction_CI_LabelSync_RunFails(t *testing.T) {
 			}),
 		),
 	))
-	runAction(context.Background(), "ci", "labelsync", "", c, discardLogger())
+	runAction(context.Background(), "ci", "labelsync", "", "", c, discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
@@ -159,17 +158,17 @@ func TestRunAction_CI_LabelSync_Success(t *testing.T) {
 		}),
 		// No labels to sync (empty config), no GetLabel calls needed
 	))
-	runAction(context.Background(), "ci", "labelsync", "", c, discardLogger())
+	runAction(context.Background(), "ci", "labelsync", "", "", c, discardLogger())
 }
 
 func TestRunAction_CI_UnknownPlugin(t *testing.T) {
 	code := captureExit(t)
-	runAction(context.Background(), "ci", "unknown-plugin", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "unknown-plugin", "", "", github.NewClient(nil), discardLogger())
 	assert.Equal(t, 1, *code)
 }
 
 func TestRunAction_UnknownMode(t *testing.T) {
-	runAction(context.Background(), "unknown-mode", "", "", github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "unknown-mode", "", "", "", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_CI_Event_MinApprovals(t *testing.T) {
@@ -178,7 +177,7 @@ func TestRunAction_CI_Event_MinApprovals(t *testing.T) {
 	prowCfg := "github:\n  app_id: 1\n  installation_id: 1\nfeatures:\n  lgtm:\n    min_approvals: 2\n"
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
 	t.Chdir(dir)
-	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "issue_comment", github.NewClient(nil), discardLogger())
 }
 
 func TestRunAction_CI_Event_ZeroMinApprovals(t *testing.T) {
@@ -187,5 +186,5 @@ func TestRunAction_CI_Event_ZeroMinApprovals(t *testing.T) {
 	prowCfg := "github:\n  app_id: 1\n  installation_id: 1\nfeatures:\n  lgtm:\n    min_approvals: 0\n"
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".github", "prow-lite.yml"), []byte(prowCfg), 0o644))
 	t.Chdir(dir)
-	runAction(context.Background(), "ci", "event", `{"action":"unknown_event"}`, github.NewClient(nil), discardLogger())
+	runAction(context.Background(), "ci", "event", `{"action":"created"}`, "issue_comment", github.NewClient(nil), discardLogger())
 }
