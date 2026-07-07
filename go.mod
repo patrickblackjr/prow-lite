@@ -6,6 +6,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/go-github/v71 v71.0.0
+	github.com/google/go-github/v89 v89.0.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/migueleliasweb/go-github-mock v1.5.0
 	github.com/samber/slog-gin v1.21.1
