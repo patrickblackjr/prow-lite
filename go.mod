@@ -1,6 +1,6 @@
 module github.com/patrickblackjr/prow-lite
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
@@ -9,7 +9,7 @@ require (
 	github.com/lmittmann/tint v1.1.3
 	github.com/migueleliasweb/go-github-mock v1.5.0
 	github.com/samber/slog-gin v1.21.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v3 v3.9.1
 	golang.org/x/sync v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -49,8 +49,9 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.6.0 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/arch v0.28.0 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
